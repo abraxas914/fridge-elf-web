@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { prepareApp } from './helpers/appDriver'
 
 test('landing page links the latest APK and opens the demo without leaving the domain', async ({
   page,
@@ -34,4 +35,24 @@ test('landing page links the latest APK and opens the demo without leaving the d
   await page.getByRole('link', { name: '打开在线 Demo' }).click()
   await expect(page).toHaveURL(/\/demo$/)
   await expect(page.getByRole('heading', { name: '冰箱生活助手' })).toBeVisible()
+})
+
+test('desktop demo stage stays centered in the browser viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await prepareApp(page)
+
+  const stage = page.locator('#stage')
+  const bounds = await stage.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return {
+      center: rect.left + rect.width / 2,
+      viewportCenter: window.innerWidth / 2,
+      width: rect.width,
+    }
+  })
+
+  expect(bounds.width).toBe(480)
+  expect(Math.abs(bounds.center - bounds.viewportCenter)).toBeLessThan(1)
 })

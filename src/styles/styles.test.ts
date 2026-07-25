@@ -63,6 +63,9 @@ describe('Life Helper visual source', () => {
     const globalCss = readStyle('global.css')
     const pixelCss = readStyle('pixel.css')
 
+    expect(globalCss).toMatch(
+      /#root\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*center;/s,
+    )
     expect(globalCss).toContain('max-width: 480px')
     expect(globalCss).toContain('height: 100dvh')
     expect(globalCss).toContain('overflow: hidden')
