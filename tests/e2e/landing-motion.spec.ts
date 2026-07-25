@@ -191,6 +191,110 @@ test('mobile recipe gallery peeks, scrolls natively, and never widens the page',
   }
 })
 
+test('desktop hardware proof uses the approved layered composition', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await stubMissingRelease(page)
+  await page.goto('/')
+
+  const proof = page.getByTestId('hardware-proof')
+  const photo = page.getByRole('img', {
+    name: '同时运行 Fridge Elf 的手机端与冰箱硬件终端原型',
+  })
+  await proof.scrollIntoViewIfNeeded()
+  await expect(photo).toHaveJSProperty('complete', true)
+  await expect(proof).toHaveAttribute('data-photo-ready', 'true')
+
+  const composition = await proof.evaluate((element) => {
+    const diagram = element.querySelector('.landing-hardware-diagram')
+    const frame = element.querySelector('.landing-hardware-photo-frame')
+    const image = element.querySelector('.landing-hardware-photo')
+    if (
+      !(diagram instanceof HTMLElement) ||
+      !(frame instanceof HTMLElement) ||
+      !(image instanceof HTMLElement)
+    ) {
+      throw new Error('hardware proof unavailable')
+    }
+    return {
+      display: getComputedStyle(element).display,
+      diagramArea: getComputedStyle(diagram).gridArea,
+      frameArea: getComputedStyle(frame).gridArea,
+      border: getComputedStyle(frame).borderTopWidth,
+      filter: getComputedStyle(image).filter,
+      fit: getComputedStyle(image).objectFit,
+    }
+  })
+
+  expect(composition.display).toBe('grid')
+  expect(composition.diagramArea).toBe(composition.frameArea)
+  expect(composition.border).toBe('3px')
+  expect(composition.filter).not.toBe('none')
+  expect(composition.fit).toBe('contain')
+})
+
+test('mobile hardware proof stacks without widening the page', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await stubMissingRelease(page)
+  await page.goto('/')
+
+  const proof = page.getByTestId('hardware-proof')
+  await proof.scrollIntoViewIfNeeded()
+  await expect(proof).toHaveAttribute('data-photo-ready', 'true')
+
+  const geometry = await proof.evaluate((element) => {
+    const diagram = element.querySelector('.landing-hardware-diagram')
+    const frame = element.querySelector('.landing-hardware-photo-frame')
+    const image = element.querySelector('.landing-hardware-photo')
+    if (
+      !(diagram instanceof HTMLElement) ||
+      !(frame instanceof HTMLElement) ||
+      !(image instanceof HTMLElement)
+    ) {
+      throw new Error('hardware proof unavailable')
+    }
+    return {
+      diagramBottom: diagram.getBoundingClientRect().bottom,
+      frameTop: frame.getBoundingClientRect().top,
+      fit: getComputedStyle(image).objectFit,
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    }
+  })
+
+  expect(geometry.frameTop).toBeGreaterThanOrEqual(geometry.diagramBottom - 1)
+  expect(geometry.fit).toBe('contain')
+  expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth)
+})
+
+test('reduced motion removes hardware reveal transitions', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await stubMissingRelease(page)
+  await page.goto('/')
+
+  const proof = page.getByTestId('hardware-proof')
+  await proof.scrollIntoViewIfNeeded()
+  await expect(proof).toHaveAttribute('data-photo-ready', 'true')
+
+  const durations = await proof.evaluate((element) => {
+    const diagram = element.querySelector('.landing-hardware-diagram')
+    const frame = element.querySelector('.landing-hardware-photo-frame')
+    if (!(diagram instanceof HTMLElement) || !(frame instanceof HTMLElement)) {
+      throw new Error('hardware proof unavailable')
+    }
+    return {
+      diagram: getComputedStyle(diagram).transitionDuration,
+      frame: getComputedStyle(frame).transitionDuration,
+    }
+  })
+
+  expect(durations).toEqual({ diagram: '0s', frame: '0s' })
+})
+
 test('lifecycle nodes remain distributed around the full loop after reveal', async ({
   page,
 }) => {
