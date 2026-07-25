@@ -1,21 +1,9 @@
 import {
-  foodCatalog,
-  type FoodCatalogEntry,
+  findFoodCatalogEntry,
   type FoodKey,
 } from '../catalog/foodCatalog'
 import type { InventoryItem } from '../bridge/types'
 import type { PresentedFood } from './types'
-
-const catalogByName = new Map<string, FoodCatalogEntry>(
-  Object.values(foodCatalog).flatMap((entry) => [
-    [entry.name.toLocaleLowerCase('zh-CN'), entry],
-    [entry.englishName.toLocaleLowerCase('en-US'), entry],
-  ]),
-)
-
-function catalogEntryFor(name: string) {
-  return catalogByName.get(name.trim().toLocaleLowerCase('zh-CN'))
-}
 
 function daysUntil(expiryDate: string, today: Date) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(expiryDate)
@@ -73,7 +61,7 @@ export function mapNativeInventoryItem(
   item: InventoryItem,
   today: Date,
 ): PresentedFood {
-  const catalog = catalogEntryFor(item.name)
+  const catalog = findFoodCatalogEntry(item.name)
   const addedDate = normalizedAddedDate(item.addedDate ?? '', today)
   return {
     id: item.id,

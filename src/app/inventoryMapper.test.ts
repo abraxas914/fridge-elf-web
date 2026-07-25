@@ -51,6 +51,17 @@ describe('native inventory presentation mapping', () => {
     expect(mapped.expiryDate).toBe('2026-07-25')
   })
 
+  it('maps catalog aliases to the same trusted food art', () => {
+    const mapped = mapNativeInventoryItem(
+      nativeItem({ name: '五花肉', quantity: '300g' }),
+      today,
+    )
+
+    expect(mapped.key).toBe('pork')
+    expect(mapped.name).toBe('五花肉')
+    expect(mapped.englishName).toBe('Pork')
+  })
+
   it('renders honest neutral metadata for unknown native food', () => {
     const mapped = mapNativeInventoryItem(
       nativeItem({

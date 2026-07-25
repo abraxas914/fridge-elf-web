@@ -47,6 +47,16 @@ const foodKeys = [
   'lemon',
   'ham',
   'soyMilk',
+  'eggplant',
+  'avocado',
+  'pumpkin',
+  'corn',
+  'garlic',
+  'celery',
+  'bambooShoot',
+  'peanut',
+  'beans',
+  'tea',
 ] as const
 
 const pixelIconNames = [
@@ -88,7 +98,7 @@ const pixelIconNames = [
 ] as const
 
 describe('prototype-owned visual catalogs', () => {
-  it('contains the expanded 36-food icon catalog and mold overlay', async () => {
+  it('contains the expanded 46-food icon catalog and mold overlay', async () => {
     const path = `${catalogRoot}/foodCatalog.ts`
     expect(existsSync(path)).toBe(true)
     if (!existsSync(path)) return
@@ -99,6 +109,9 @@ describe('prototype-owned visual catalogs', () => {
     for (const svg of Object.values(FOOD_SVGS)) {
       expect(svg).toContain('viewBox="0 0 16 16"')
       expect(svg).toContain('shape-rendering="crispEdges"')
+      expect(svg).toContain('#2B2117')
+      expect(svg).not.toMatch(/https?:\/\//i)
+      expect(svg).not.toMatch(/<script|<foreignObject/i)
     }
     const moldPath = `${catalogRoot}/moldSvgs.tsx`
     expect(existsSync(moldPath)).toBe(true)
@@ -167,9 +180,20 @@ describe('prototype-owned visual catalogs', () => {
     ])
     expect(GOLDEN_FOODS[0].expiryDate).toBe('2026-07-29')
     expect(GOLDEN_FOODS[2].expiryDate).toBe('2026-07-25')
-    expect(RECIPES).toHaveLength(5)
+    expect(RECIPES).toHaveLength(55)
     expect(SHOP_ITEMS).toHaveLength(5)
     expect(MESSAGES).toHaveLength(3)
+  })
+
+  it('resolves colorful foods and existing aliases through one catalog', async () => {
+    const { findFoodCatalogEntry } = await import('./foodCatalog')
+
+    expect(findFoodCatalogEntry('茄子')?.key).toBe('eggplant')
+    expect(findFoodCatalogEntry('牛油果')?.key).toBe('avocado')
+    expect(findFoodCatalogEntry('西芹')?.key).toBe('celery')
+    expect(findFoodCatalogEntry('竹笋')?.key).toBe('bambooShoot')
+    expect(findFoodCatalogEntry('五花肉')?.key).toBe('pork')
+    expect(findFoodCatalogEntry('嫩豆腐')?.key).toBe('tofu')
   })
 })
 

@@ -14,7 +14,7 @@ export const FOOD_SVGS = {
   apple:
     '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><circle cx="8" cy="9" r="5" fill="#D96B4F" stroke="#2B2117" stroke-width="1"/><ellipse cx="6" cy="7" rx="1.5" ry="2" fill="#E89870" opacity="0.7"/><rect x="7.5" y="3" width="1" height="2" fill="#5A4530"/><path d="M 8 4 Q 11 3 11 5" fill="#7A9968" stroke="#2B2117" stroke-width="0.8"/></svg>',
   banana:
-    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M 3 5 Q 8 15 14 8 L 12 6 Q 8 12 4 4 Z" fill="#E8B84A" stroke="#2B2117" stroke-width="1"/><rect x="3" y="4" width="2" height="2" fill="#5A4530" stroke="#2B2117" stroke-width="0.5"/><path d="M 4 6 Q 8 13 12 8" stroke="#F5D078" stroke-width="0.5" fill="none"/></svg>',
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M3 4q2 8 8 9l3-3-2-3q-3 4-7-4z" fill="#F2C94C" stroke="#2B2117"/><path d="M5 5q2 6 7 6" fill="none" stroke="#FFE58A"/><rect x="2" y="2" width="3" height="3" fill="#7A5A31" stroke="#2B2117"/><rect x="12" y="8" width="3" height="3" fill="#7A5A31" stroke="#2B2117"/></svg>',
   grape:
     '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><circle cx="6" cy="8" r="2" fill="#8A5B9E" stroke="#2B2117" stroke-width="0.8"/><circle cx="10" cy="8" r="2" fill="#8A5B9E" stroke="#2B2117" stroke-width="0.8"/><circle cx="5" cy="11" r="2" fill="#6B4B7E" stroke="#2B2117" stroke-width="0.8"/><circle cx="8" cy="12" r="2" fill="#6B4B7E" stroke="#2B2117" stroke-width="0.8"/><circle cx="11" cy="11" r="2" fill="#6B4B7E" stroke="#2B2117" stroke-width="0.8"/><circle cx="8" cy="9" r="2" fill="#7A5B8E" stroke="#2B2117" stroke-width="0.8"/><path d="M 8 6 Q 10 4 12 5" stroke="#5A7A4B" stroke-width="1" fill="none"/></svg>',
   strawberry:
@@ -71,6 +71,26 @@ export const FOOD_SVGS = {
     '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="3" y="4" width="10" height="9" rx="2" fill="#D87979" stroke="#2B2117"/><circle cx="6" cy="8" r="1" fill="#F5D0C0"/><circle cx="10" cy="10" r="1" fill="#F5D0C0"/></svg>',
   soyMilk:
     '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M4 5h8v10H4z" fill="#F5EAC8" stroke="#2B2117"/><path d="M5 2h6l1 3H4z" fill="#A8C08A" stroke="#2B2117"/><circle cx="8" cy="10" r="2" fill="#B88848"/></svg>',
+  eggplant:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M5 5q-3 3-1 7 3 4 7 1 4-3 1-7z" fill="#7652A8" stroke="#2B2117"/><path d="M6 6q2-3 5-2l2-2-1 4z" fill="#69A85B" stroke="#2B2117"/><path d="M6 7q-1 4 3 5" fill="none" stroke="#A98AD1"/></svg>',
+  avocado:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M8 2q3 0 5 7 1 5-5 5T3 9q2-7 5-7z" fill="#6F9F4F" stroke="#2B2117"/><path d="M8 4q2 0 3 5 0 3-3 3T5 9q1-5 3-5z" fill="#C7D96B"/><circle cx="8" cy="10" r="2" fill="#A66B3F" stroke="#2B2117"/></svg>',
+  pumpkin:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M3 7q0-3 3-3h4q3 0 3 3v4q0 3-3 3H6q-3 0-3-3z" fill="#E88932" stroke="#2B2117"/><path d="M6 5q-2 4 0 8M10 5q2 4 0 8M8 4v9" fill="none" stroke="#F5B04C"/><path d="M8 4V2h3" fill="none" stroke="#5A7A4B" stroke-width="2"/></svg>',
+  corn:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M5 3h6v9q-3 4-6 0z" fill="#F2C94C" stroke="#2B2117"/><path d="M7 4v9M9 4v9M5 6h6M5 9h6" stroke="#D49B2A"/><path d="M5 8Q1 9 4 14M11 8q4 1 1 6" fill="#69A85B" stroke="#2B2117"/></svg>',
+  garlic:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M8 4q1 3 4 4 3 5-4 6-7-1-4-6 3-1 4-4z" fill="#F4E8C4" stroke="#2B2117"/><path d="M8 4V1m0 2 3-1M8 3 5 2" stroke="#69A85B"/><path d="M6 8q-1 4 2 6m2-6q1 4-2 6" fill="none" stroke="#CDBF98"/></svg>',
+  celery:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M5 14 6 5m3 9V4m2 10V6" stroke="#73A85B" stroke-width="2"/><path d="M6 6Q2 6 3 3q3 0 3 3zm3-1Q6 2 9 1q2 2 0 4zm2 2q0-4 3-4 1 3-3 4z" fill="#8FCB72" stroke="#2B2117"/><path d="M4 14h9" stroke="#2B2117" stroke-width="2"/></svg>',
+  bambooShoot:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M8 1 3 14h10z" fill="#D9A868" stroke="#2B2117"/><path d="m8 3 3 3-5 1 5 2-7 2" fill="none" stroke="#F5D078"/><path d="M4 14h8" stroke="#69A85B" stroke-width="2"/></svg>',
+  peanut:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M5 3q3-2 5 1 3 1 2 4 2 3-1 5-2 3-5 1-3 0-3-3-2-3 1-5-1-2 1-3z" fill="#D5A45D" stroke="#2B2117"/><path d="m5 5 6 6M4 8l4-4m0 10 4-5" stroke="#A8793F"/></svg>',
+  beans:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M2 9q4-6 12-3-2 7-10 7z" fill="#77A85C" stroke="#2B2117"/><circle cx="5" cy="10" r="1.5" fill="#E9D875" stroke="#2B2117"/><circle cx="8" cy="8" r="1.5" fill="#D96B4F" stroke="#2B2117"/><circle cx="11" cy="8" r="1.5" fill="#8A5B9E" stroke="#2B2117"/></svg>',
+  tea:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M3 6h9v7H3z" fill="#F5EAC8" stroke="#2B2117"/><path d="M12 8h2v3h-2" fill="none" stroke="#2B2117"/><path d="M5 8h5v3H5z" fill="#B87A5A"/><path d="M7 5q-2-2 0-4m3 4q2-2 0-4" fill="none" stroke="#69A85B"/></svg>',
 } as const
 
 export type FoodKey = keyof typeof FOOD_SVGS
@@ -124,6 +144,16 @@ export const foodCatalogEntries: readonly FoodCatalogEntry[] = [
   { key: 'lemon', name: '柠檬', englishName: 'Lemon', category: 'ingredient', kcal: 29, quantity: '2个', addedDaysAgo: 0, expiresInDays: 14 },
   { key: 'ham', name: '火腿', aliases: ['香肠', '培根'], englishName: 'Ham', category: 'ingredient', kcal: 145, quantity: '1包', addedDaysAgo: 0, expiresInDays: 7 },
   { key: 'soyMilk', name: '豆浆', aliases: ['豆奶'], englishName: 'Soy Milk', category: 'drink', kcal: 31, quantity: '1瓶', addedDaysAgo: 0, expiresInDays: 5 },
+  { key: 'eggplant', name: '茄子', aliases: ['紫茄子'], englishName: 'Eggplant', category: 'ingredient', kcal: 25, quantity: '2根', addedDaysAgo: 0, expiresInDays: 5 },
+  { key: 'avocado', name: '牛油果', aliases: ['鳄梨'], englishName: 'Avocado', category: 'ingredient', kcal: 160, quantity: '2个', addedDaysAgo: 0, expiresInDays: 4 },
+  { key: 'pumpkin', name: '南瓜', aliases: ['倭瓜'], englishName: 'Pumpkin', category: 'ingredient', kcal: 26, quantity: '半个', addedDaysAgo: 0, expiresInDays: 10 },
+  { key: 'corn', name: '玉米', aliases: ['玉米粒'], englishName: 'Corn', category: 'ingredient', kcal: 86, quantity: '2根', addedDaysAgo: 0, expiresInDays: 5 },
+  { key: 'garlic', name: '大蒜', aliases: ['蒜', '蒜子', '蒜蓉'], englishName: 'Garlic', category: 'ingredient', kcal: 149, quantity: '1头', addedDaysAgo: 0, expiresInDays: 20 },
+  { key: 'celery', name: '西芹', aliases: ['芹菜'], englishName: 'Celery', category: 'ingredient', kcal: 16, quantity: '1把', addedDaysAgo: 0, expiresInDays: 6 },
+  { key: 'bambooShoot', name: '竹笋', aliases: ['笋子', '罗汉笋', '笋块'], englishName: 'Bamboo Shoot', category: 'ingredient', kcal: 27, quantity: '300g', addedDaysAgo: 0, expiresInDays: 5 },
+  { key: 'peanut', name: '花生', aliases: ['花生米'], englishName: 'Peanut', category: 'ingredient', kcal: 567, quantity: '200g', addedDaysAgo: 0, expiresInDays: 30 },
+  { key: 'beans', name: '杂豆', aliases: ['毛豆', '毛豆米', '豆米', '豌豆'], englishName: 'Beans', category: 'ingredient', kcal: 120, quantity: '300g', addedDaysAgo: 0, expiresInDays: 5 },
+  { key: 'tea', name: '茶', aliases: ['红茶', '茶包'], englishName: 'Tea', category: 'drink', kcal: 1, quantity: '1盒', addedDaysAgo: 0, expiresInDays: 90 },
 ]
 
 export const foodCatalog = Object.fromEntries(

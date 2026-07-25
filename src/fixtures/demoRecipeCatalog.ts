@@ -117,7 +117,7 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
     category: '主食',
     ingredients: [
       ingredient('鸡丁', '170g', 'chicken'),
-      ingredient('罗汉笋块', '300g'),
+      ingredient('罗汉笋块', '300g', 'bambooShoot'),
       ingredient('包菜', '70g', 'cabbage'),
       ingredient('米饭', '300g', 'rice'),
       ingredient('卤蛋', '半个', 'egg'),
@@ -205,13 +205,13 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
   }),
   seed({
     id: 'recipe-celery-peanuts',
-    key: 'unknown',
+    key: 'celery',
     name: 'CELERY PEANUTS',
     cn: '西芹花生米',
     category: '凉拌',
     ingredients: [
-      ingredient('西芹', '800g'),
-      ingredient('花生米', '400g'),
+      ingredient('西芹', '800g', 'celery'),
+      ingredient('花生米', '400g', 'peanut'),
       ingredient('红椒', '30g', 'pepper'),
       ingredient('芝麻香油', '30g'),
       ingredient('盐', '6g'),
@@ -276,7 +276,7 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
     category: '早餐',
     ingredients: [
       ingredient('小黄米', '300g', 'rice'),
-      ingredient('南瓜丁', '400g'),
+      ingredient('南瓜丁', '400g', 'pumpkin'),
       ingredient('水', '4600g'),
     ],
     steps: [
@@ -420,7 +420,7 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
     ingredients: [
       ingredient('去骨鸡腿丁', '1050g', 'chicken'),
       ingredient('胡萝卜丁', '250g', 'carrot'),
-      ingredient('花生米', '250g'),
+      ingredient('花生米', '250g', 'peanut'),
       ingredient('大葱', '250g'),
       ingredient('干红椒', '20g', 'pepper'),
       ingredient('宫保调味酱', '230g'),
@@ -435,13 +435,13 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
   }),
   seed({
     id: 'recipe-braised-eggplant',
-    key: 'unknown',
+    key: 'eggplant',
     name: 'BRAISED EGGPLANT',
     cn: '红烧茄子',
     category: '炒菜',
     ingredients: [
-      ingredient('茄子', '1400g'),
-      ingredient('大蒜', '100g'),
+      ingredient('茄子', '1400g', 'eggplant'),
+      ingredient('大蒜', '100g', 'garlic'),
       ingredient('剁椒', '30g', 'pepper'),
       ingredient('大豆油', '30g'),
       ingredient('鸡油', '30g'),
@@ -480,12 +480,12 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
   }),
   seed({
     id: 'recipe-celery-tofu-pork',
-    key: 'pork',
+    key: 'celery',
     name: 'CELERY TOFU PORK',
     cn: '芹菜香干炒肉丝',
     category: '炒菜',
     ingredients: [
-      ingredient('芹菜', '1000g'),
+      ingredient('芹菜', '1000g', 'celery'),
       ingredient('香干', '500g', 'tofu'),
       ingredient('肉丝', '350g', 'pork'),
       ingredient('红椒', '60g', 'pepper'),
@@ -509,7 +509,7 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
     category: '炒菜',
     ingredients: [
       ingredient('鸡块', '1500g', 'chicken'),
-      ingredient('毛豆米', '750g'),
+      ingredient('毛豆米', '750g', 'beans'),
       ingredient('姜片', '60g'),
       ingredient('大蒜', '60g'),
       ingredient('剁椒', '50g', 'pepper'),
@@ -600,7 +600,7 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
     ingredients: [
       ingredient('豆腐', '3盒', 'tofu'),
       ingredient('大白菜', '800g', 'cabbage'),
-      ingredient('大蒜', '30g'),
+      ingredient('大蒜', '30g', 'garlic'),
       ingredient('熟猪油', '70g'),
       ingredient('水', '900g'),
       ingredient('炖菜调味料', '1袋'),
@@ -912,8 +912,8 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
     category: '蒸菜',
     ingredients: [
       ingredient('虾仁', '6颗', 'shrimp'),
-      ingredient('玉米粒', '50g'),
-      ingredient('豌豆', '50g'),
+      ingredient('玉米粒', '50g', 'corn'),
+      ingredient('豌豆', '50g', 'beans'),
       ingredient('胡萝卜丁', '50g', 'carrot'),
       ingredient('大豆油', '6g'),
       ingredient('盐', '1g'),
@@ -953,12 +953,12 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
   }),
   seed({
     id: 'recipe-steamed-pumpkin',
-    key: 'unknown',
+    key: 'pumpkin',
     name: 'STEAMED PUMPKIN',
     cn: '蒸南瓜',
     category: '蒸菜',
     ingredients: [
-      ingredient('南瓜块', '220g'),
+      ingredient('南瓜块', '220g', 'pumpkin'),
       ingredient('红枣', '1颗'),
     ],
     steps: [
@@ -1002,7 +1002,7 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
     ingredients: [
       ingredient('剁椒', undefined, 'pepper'),
       ingredient('小米辣', undefined, 'pepper'),
-      ingredient('大蒜', undefined),
+      ingredient('大蒜', undefined, 'garlic'),
       ingredient('盐', undefined),
     ],
     steps: [
@@ -1033,12 +1033,12 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
   }),
   seed({
     id: 'recipe-garlic-sauce',
-    key: 'unknown',
+    key: 'garlic',
     name: 'GARLIC SAUCE',
     cn: '蒜蓉酱',
     category: '配料',
     ingredients: [
-      ingredient('大蒜', undefined),
+      ingredient('大蒜', undefined, 'garlic'),
       ingredient('大豆油', undefined),
       ingredient('生抽', undefined),
       ingredient('蚝油', undefined),
@@ -1058,7 +1058,7 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
     cn: '现磨豆浆',
     category: '饮品',
     ingredients: [
-      ingredient('干黄豆', '500g'),
+      ingredient('干黄豆', '500g', 'beans'),
       ingredient('浸泡用水', '2000g'),
       ingredient('磨制用水', '5000g'),
     ],
@@ -1078,7 +1078,7 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
     cn: '热奶茶',
     category: '饮品',
     ingredients: [
-      ingredient('苹果山楂红茶包', '3g'),
+      ingredient('苹果山楂红茶包', '3g', 'tea'),
       ingredient('开水', '150ml'),
       ingredient('生椰乳', '150ml', 'milk'),
     ],
@@ -1098,7 +1098,7 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
     cn: '苹果山楂红茶',
     category: '饮品',
     ingredients: [
-      ingredient('苹果山楂红茶包', '3g'),
+      ingredient('苹果山楂红茶包', '3g', 'tea'),
       ingredient('开水', '150ml'),
     ],
     steps: [
@@ -1111,12 +1111,12 @@ export const DEMO_RECIPE_SEEDS: readonly CuratedRecipe[] = [
   }),
   seed({
     id: 'recipe-mushroom-yam-corn-paste',
-    key: 'unknown',
+    key: 'corn',
     name: 'MUSHROOM YAM CORN PASTE',
     cn: '猴头菇山药玉米糊',
     category: '饮品',
     ingredients: [
-      ingredient('猴头菇山药玉米粉', '50g'),
+      ingredient('猴头菇山药玉米粉', '50g', 'corn'),
       ingredient('温开水', '400g'),
     ],
     steps: [

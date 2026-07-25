@@ -62,4 +62,18 @@ describe('demo recipe catalog', () => {
     expect(serialized).not.toMatch(/<\/?[a-z][^>]*>/i)
     expect(serialized).not.toMatch(/供应商|来自.{2,20}(食品|生物|餐饮)|门店|套餐/)
   })
+
+  it('uses colorful catalog art for recipes with matching hero ingredients', () => {
+    const byId = new Map(
+      DEMO_RECIPE_SEEDS.map((recipe) => [recipe.id, recipe]),
+    )
+
+    expect(byId.get('recipe-braised-eggplant')?.key).toBe('eggplant')
+    expect(byId.get('recipe-steamed-pumpkin')?.key).toBe('pumpkin')
+    expect(byId.get('recipe-celery-peanuts')?.key).toBe('celery')
+    expect(byId.get('recipe-apple-hawthorn-black-tea')?.ingredients)
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ key: 'tea' }),
+      ]))
+  })
 })
