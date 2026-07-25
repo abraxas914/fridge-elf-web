@@ -337,7 +337,7 @@ du -k docs/readme/*.webp
 
 Expected: 1440×900, 1440×900, and 412×915; each file is below 500 KB.
 
-- [ ] **Step 3: Connect the existing Vercel project once**
+- [x] **Step 3: Connect the existing Vercel project once**
 
 Run from a clean clone linked to Vercel project `fridge-elf`:
 
@@ -393,13 +393,12 @@ Environment-limited checks:
 
 - `npm run e2e` could not start its local server because the execution sandbox rejected `127.0.0.1:4173` with `EPERM`; no browser assertion ran or failed.
 - `npm run capture:readme` reached the same browser/process sandbox boundary. The committed desktop visuals were rendered from the repository's current design tokens and illustration language; the mobile visual reuses the repository's Darwin visual-regression baseline.
-- GitHub push and Vercel CLI Git connection could not run because the sandbox had no DNS access and the requested network escalation was rejected by the execution-usage limit.
 
-External continuation point:
+External deployment progress:
 
-```bash
-git push origin main
-npx --yes vercel@latest git connect https://github.com/abraxas914/fridge-elf-web
-```
-
-After the first command, confirm `CI` and `Deploy Retinbox mirror`. If the existing Vercel project is already Git-connected, the same push also creates a Vercel production deployment; otherwise run the second command once from the linked `fridge-elf` project and push again.
+- Pushed `fd4b11376e779df43b61dd79013d32fff1d79aed` to `main`.
+- `CI` run `30159209806` completed successfully.
+- `Deploy Retinbox mirror` run `30159209811` completed successfully.
+- Re-linked the working directory to the existing `suyc417-5032s-projects/fridge-elf` project; no duplicate project was created.
+- Connected `https://github.com/abraxas914/fridge-elf-web` through Vercel Git Integration.
+- A subsequent `main` push is required to validate that all three publishers trigger from the same new SHA.
