@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import { buildDemoWorldSnapshot } from './ai/demoWorld'
 import type {
   DemoAssistantIntent,
   DemoAssistantReply,
@@ -269,16 +268,37 @@ export function App({
   )
 
   const assistantContext = useCallback(
-    (question: string, intent?: DemoAssistantIntent) => ({
-      ...(intent ? { intent } : {}),
-      question,
-      snapshot: buildDemoWorldSnapshot({
-        inventory: inventoryItems,
+    (question: string, intent?: DemoAssistantIntent) => {
+      let profile: unknown = {}
+      try {
+        profile = JSON.parse(
+          runtime.stateStorage.getItem('fridge-profile-v1') ?? '{}',
+        )
+      } catch {
+        profile = {}
+      }
+      return {
+        ...(intent ? { intent } : {}),
+        question,
+        inventory: inventoryItems.map((food) => ({
+          name: food.name,
+          quantity: food.quantity,
+          storage: food.storage,
+          addedDate: food.addedDate,
+          expiryDate: food.expiryDate,
+          status: food.status,
+        })),
+        profile,
         planner: state.planner,
         missingItems: missingIngredients,
-      }),
-    }),
-    [inventoryItems, missingIngredients, state.planner],
+      }
+    },
+    [
+      inventoryItems,
+      missingIngredients,
+      runtime.stateStorage,
+      state.planner,
+    ],
   )
 
   const startInventoryVoice = useCallback(() => {
