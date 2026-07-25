@@ -244,7 +244,7 @@ Render one semantic section, one text block, four figures from `recipeShowcase.i
 <img
   src={source}
   srcSet={`${source} 600w, ${getRetinaSource(source)} 1200w`}
-  sizes="(max-width: 767px) 78vw, 31vw"
+  sizes="(max-width: 800px) 78vw, 31vw"
   width="1200"
   height="1440"
   loading="lazy"
@@ -262,7 +262,7 @@ const progress = Math.min(1, Math.max(0, -rectangle.top / scrollRange))
 setActiveIndex(getRecipeShowcaseIndex(progress))
 ```
 
-Skip scroll-driven updates when `(max-width: 767px)` or `(prefers-reduced-motion: reduce)` matches. Remove listeners and cancel the pending frame on unmount.
+Skip scroll-driven updates when `(max-width: 800px)` or `(prefers-reduced-motion: reduce)` matches. Remove listeners and cancel the pending frame on unmount.
 
 - [ ] **Step 4: Add approved layout CSS**
 
@@ -274,7 +274,7 @@ Implement:
 - `data-active="true"` main image treatment
 - transform-only transitions using `cubic-bezier(0.16, 1, 0.3, 1)`
 - no text overlays, gradient overlays, auto animation, or layout-property animation
-- at `max-width: 767px`, reset height/sticky/absolute positioning and use `display:flex; overflow-x:auto; scroll-snap-type:x mandatory`
+- at `max-width: 800px`, reset height/sticky/absolute positioning and use `display:flex; overflow-x:auto; scroll-snap-type:x mandatory`
 - at reduced motion, remove transitions
 
 - [ ] **Step 5: Run the tests and verify GREEN**

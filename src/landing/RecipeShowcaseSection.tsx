@@ -14,7 +14,7 @@ const getRetinaSource = (source: string) =>
 const prefersStaticShowcase = () => {
   if (typeof window.matchMedia !== 'function') return false
   return (
-    window.matchMedia('(max-width: 767px)').matches ||
+    window.matchMedia('(max-width: 800px)').matches ||
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
   )
 }
@@ -121,7 +121,7 @@ export function RecipeShowcase({
               <img
                 src={source}
                 srcSet={`${source} 600w, ${getRetinaSource(source)} 1200w`}
-                sizes="(max-width: 767px) 78vw, 31vw"
+                sizes="(max-width: 800px) 78vw, 31vw"
                 width="1200"
                 height="1440"
                 loading="lazy"

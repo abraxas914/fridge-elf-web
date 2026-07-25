@@ -130,6 +130,33 @@ test('reduced motion keeps the second recipe image in the main position', async 
   await expect(showcase).toHaveAttribute('data-active-index', '2')
 })
 
+test('the existing 800px mobile breakpoint disables scroll-driven recipe swaps', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 800, height: 900 })
+  await stubMissingRelease(page)
+  await page.goto('/')
+
+  const showcase = page.locator('.recipe-showcase')
+  await showcase.evaluate((section) => {
+    const landing = section.closest('.landing-page')
+    if (!(landing instanceof HTMLElement)) {
+      throw new Error('landing scroll root unavailable')
+    }
+    landing.scrollTo({
+      top: (section as HTMLElement).offsetTop + section.clientHeight,
+      behavior: 'instant',
+    })
+  })
+  await page.waitForTimeout(120)
+
+  await expect(showcase).toHaveAttribute('data-active-index', '2')
+  await expect(page.locator('.recipe-showcase-gallery')).toHaveCSS(
+    'overflow-x',
+    'auto',
+  )
+})
+
 test('mobile recipe gallery peeks, scrolls natively, and never widens the page', async ({
   page,
 }) => {
