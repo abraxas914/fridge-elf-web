@@ -75,6 +75,95 @@ test('reduced motion removes snap and looping illustration movement', async ({
   expect(motion.animationName).toBe('none')
 })
 
+test('desktop scroll promotes all four recipe images in the approved order', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await stubMissingRelease(page)
+  await page.goto('/')
+
+  const showcase = page.locator('.recipe-showcase')
+  await showcase.scrollIntoViewIfNeeded()
+
+  for (const [progress, activeIndex] of [
+    [0.1, '2'],
+    [0.35, '1'],
+    [0.6, '3'],
+    [0.9, '4'],
+  ] as const) {
+    await showcase.evaluate((section, nextProgress) => {
+      const landing = section.closest('.landing-page')
+      if (!(landing instanceof HTMLElement)) {
+        throw new Error('landing scroll root unavailable')
+      }
+      const scrollRange = section.clientHeight - landing.clientHeight
+      landing.scrollTo({
+        top: (section as HTMLElement).offsetTop + scrollRange * nextProgress,
+        behavior: 'instant',
+      })
+    }, progress)
+    await page.waitForTimeout(120)
+    await expect(showcase).toHaveAttribute('data-active-index', activeIndex)
+  }
+})
+
+test('reduced motion keeps the second recipe image in the main position', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await stubMissingRelease(page)
+  await page.goto('/')
+
+  const showcase = page.locator('.recipe-showcase')
+  await showcase.evaluate((section) => {
+    const landing = section.closest('.landing-page')
+    if (!(landing instanceof HTMLElement)) {
+      throw new Error('landing scroll root unavailable')
+    }
+    landing.scrollTo({
+      top: (section as HTMLElement).offsetTop + section.clientHeight,
+      behavior: 'instant',
+    })
+  })
+
+  await expect(showcase).toHaveAttribute('data-active-index', '2')
+})
+
+test('mobile recipe gallery peeks, scrolls natively, and never widens the page', async ({
+  page,
+}) => {
+  await stubMissingRelease(page)
+
+  for (const width of [360, 412, 480]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/')
+
+    const geometry = await page.locator('.recipe-showcase-gallery').evaluate(
+      (gallery) => ({
+        overflowX: getComputedStyle(gallery).overflowX,
+        galleryWidth: gallery.clientWidth,
+        galleryScrollWidth: gallery.scrollWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+        objectFits: Array.from(gallery.querySelectorAll('img')).map(
+          (image) => getComputedStyle(image).objectFit,
+        ),
+      }),
+    )
+
+    expect(geometry.overflowX).toBe('auto')
+    expect(geometry.galleryScrollWidth).toBeGreaterThan(geometry.galleryWidth)
+    expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth)
+    expect(geometry.objectFits).toEqual([
+      'contain',
+      'contain',
+      'contain',
+      'contain',
+    ])
+  }
+})
+
 test('lifecycle nodes remain distributed around the full loop after reveal', async ({
   page,
 }) => {
