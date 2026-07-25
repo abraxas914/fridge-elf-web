@@ -23,7 +23,9 @@ describe('LandingPage', () => {
     render(<LandingPage fetcher={fetcher} />)
 
     expect(
-      screen.getByRole('heading', { name: '把冰箱里的食材，变成今天的一餐' }),
+      screen.getByRole('heading', {
+        name: '让冰箱里的每一份食材，都有始有终。',
+      }),
     ).toBeVisible()
     expect(screen.getByRole('link', { name: '打开在线 Demo' })).toHaveAttribute(
       'href',
@@ -48,6 +50,37 @@ describe('LandingPage', () => {
     expect(screen.getByRole('link', { name: '打开在线 Demo' })).toBeVisible()
     expect(
       screen.queryByRole('link', { name: '下载 Android APK' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('tells the full food lifecycle story without exposing implementation details', () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      Response.json({ error: { message: '暂无正式版本' } }, { status: 404 }),
+    )
+
+    render(<LandingPage fetcher={fetcher} />)
+
+    expect(
+      screen.getByRole('heading', {
+        name: '让冰箱里的每一份食材，都有始有终。',
+      }),
+    ).toBeVisible()
+    expect(
+      screen.getByRole('heading', {
+        name: '从买回来，到用掉，再回到下一次采购。',
+      }),
+    ).toBeVisible()
+    expect(
+      screen.getByRole('heading', {
+        name: '冰箱旁和手机上，始终是同一份库存。',
+      }),
+    ).toBeVisible()
+    expect(screen.getByText('家庭共享库存')).toBeVisible()
+    expect(
+      screen.getByRole('heading', { name: '今天先从冰箱开始。' }),
+    ).toBeVisible()
+    expect(
+      screen.queryByText(/T5AI|Android、Wi-Fi|MQTT|DashScope/),
     ).not.toBeInTheDocument()
   })
 })
