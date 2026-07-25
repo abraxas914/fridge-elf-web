@@ -46,6 +46,19 @@ describe('Vercel API packaging', () => {
     expect(config.functions?.['api/illustrate.ts']?.maxDuration).toBeGreaterThanOrEqual(60)
   })
 
+  it('runs China-bound media gateways from the nearest supported Asian region', () => {
+    const config = JSON.parse(readFileSync(resolve('vercel.json'), 'utf8')) as {
+      functions?: Record<string, { regions?: string[] }>
+    }
+
+    expect(config.functions?.['api/demo/transcribe.ts']?.regions).toEqual([
+      'hnd1',
+    ])
+    expect(config.functions?.['api/illustrate.ts']?.regions).toEqual([
+      'hnd1',
+    ])
+  })
+
   it('allows same-origin microphone capture and documents only empty server-side Demo variables', () => {
     const example = readFileSync(resolve('.env.example'), 'utf8')
     for (const name of [

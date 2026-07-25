@@ -11,10 +11,16 @@
       "maxDuration": 60
     },
     "api/demo/transcribe.ts": {
-      "maxDuration": 300
+      "maxDuration": 300,
+      "regions": [
+        "hnd1"
+      ]
     },
     "api/illustrate.ts": {
-      "maxDuration": 300
+      "maxDuration": 300,
+      "regions": [
+        "hnd1"
+      ]
     }
   },
   "rewrites": [
