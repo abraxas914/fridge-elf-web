@@ -36,12 +36,43 @@ async function loadRelease(
     headers.authorization = `Bearer ${environment.GITHUB_RELEASE_TOKEN}`
   }
   const parseResponse = async (response: Response) => {
-    if (response.status === 404) return null
+    if (response.status === 404) {
+      console.warn(
+        JSON.stringify({
+          event: 'fridge-elf-release-not-found',
+          status: response.status,
+        }),
+      )
+      return null
+    }
     if (!response.ok) {
       throw new Error(`GitHub release API returned ${response.status}`)
     }
     try {
-      return parseLatestRelease(await response.json())
+      const payload = await response.json()
+      try {
+        return parseLatestRelease(payload)
+      } catch {
+        const release = payload as {
+          tag_name?: unknown
+          assets?: Array<{ name?: unknown }>
+        }
+        console.warn(
+          JSON.stringify({
+            event: 'fridge-elf-release-contract-mismatch',
+            tagName:
+              typeof release.tag_name === 'string'
+                ? release.tag_name
+                : null,
+            assetNames: Array.isArray(release.assets)
+              ? release.assets
+                  .map((asset) => asset.name)
+                  .filter((name): name is string => typeof name === 'string')
+              : [],
+          }),
+        )
+        return null
+      }
     } catch {
       return null
     }
