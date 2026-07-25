@@ -30,6 +30,7 @@ function request(
     authorization?: string
     method?: string
     origin?: string
+    signal?: AbortSignal
   } = {},
 ) {
   const method = options.method ?? 'POST'
@@ -58,6 +59,7 @@ function request(
       origin: options.origin ?? origin,
     },
     body: method === 'POST' ? body : undefined,
+    signal: options.signal,
   })
 }
 
@@ -274,6 +276,82 @@ describe('anonymous Demo speech transcription BFF', () => {
       parameters: {},
     })
     expect(deps.sleep).toHaveBeenCalledWith(2_000)
+    for (const [, init] of fetcher.mock.calls) {
+      expect(init?.redirect).toBe('error')
+    }
+  })
+
+  it('refuses an upstream redirect before bearer credentials can leave DashScope', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 302,
+        headers: { location: 'https://attacker.example/steal' },
+      }),
+    )
+
+    const response = await handleDemoTranscribeRequest(
+      request(),
+      environment,
+      dependencies(fetcher),
+    )
+
+    expect(response.status).toBe(502)
+    expect(fetcher).toHaveBeenCalledOnce()
+    const [, init] = fetcher.mock.calls[0]
+    expect(init?.redirect).toBe('error')
+    expect(new Headers(init?.headers).get('authorization')).toBe(
+      'Bearer server-only-speech-key',
+    )
+    expect(JSON.stringify(await response.json())).not.toContain(
+      'attacker.example',
+    )
+  })
+
+  it('cancels an upstream JSON stream as soon as it exceeds 200 KB', async () => {
+    let produced = 0
+    const cancel = vi.fn()
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        produced += 1
+        controller.enqueue(new Uint8Array(100_001))
+        if (produced === 4) controller.close()
+      },
+      cancel,
+    })
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(body, {
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+
+    const response = await handleDemoTranscribeRequest(
+      request(),
+      environment,
+      dependencies(fetcher),
+    )
+
+    expect(response.status).toBe(502)
+    expect(cancel).toHaveBeenCalledOnce()
+    expect(produced).toBeLessThan(4)
+    expect(fetcher).toHaveBeenCalledOnce()
+  })
+
+  it('treats an empty upstream body as a clean unavailable response', async () => {
+    const response = await handleDemoTranscribeRequest(
+      request(),
+      environment,
+      dependencies(
+        vi.fn().mockResolvedValue(new Response(null)),
+      ),
+    )
+
+    expect(response.status).toBe(502)
+    expect(await response.json()).toEqual({
+      error: {
+        code: 'TRANSCRIPTION_UNAVAILABLE',
+        message: '语音识别暂时不可用，请重试',
+      },
+    })
   })
 
   it('preserves sanitized throttling without exposing upstream content', async () => {

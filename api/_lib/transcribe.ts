@@ -198,15 +198,81 @@ async function safeJson(
   response: Response,
   dependencies: TranscribeDependencies,
   deadline: number,
+  signal: AbortSignal,
 ) {
-  let text: string
+  if (!response.body) return null
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let totalBytes = 0
+  let finished = false
+
+  const cancel = () => {
+    void reader.cancel().catch(() => {
+      // Best-effort cancellation; callers still receive a clean error.
+    })
+  }
+  const read = () => {
+    const unavailable = () =>
+      dependencies.now() >= deadline
+        ? timeoutError()
+        : new SpeechGatewayError(
+            502,
+            'TRANSCRIPTION_UNAVAILABLE',
+            '语音识别暂时不可用，请重试',
+          )
+    if (signal.aborted) {
+      return Promise.reject(unavailable())
+    }
+    return new Promise<ReadableStreamReadResult<Uint8Array>>(
+      (resolve, reject) => {
+        const onAbort = () => {
+          void cancel()
+          reject(unavailable())
+        }
+        signal.addEventListener('abort', onAbort, { once: true })
+        reader.read().then(resolve, reject).finally(() => {
+          signal.removeEventListener('abort', onAbort)
+        })
+      },
+    )
+  }
+
   try {
-    text = await response.text()
-  } catch {
+    while (true) {
+      const item = await read()
+      remainingTime(dependencies, deadline)
+      if (item.done) {
+        finished = true
+        break
+      }
+      totalBytes += item.value.byteLength
+      if (totalBytes > MAX_RESULT_BYTES) {
+        cancel()
+        finished = true
+        return null
+      }
+      chunks.push(item.value)
+    }
+  } catch (error) {
+    if (error instanceof SpeechGatewayError) throw error
     if (dependencies.now() >= deadline) throw timeoutError()
     return null
+  } finally {
+    if (!finished) cancel()
+    try {
+      reader.releaseLock()
+    } catch {
+      // A pending platform read may retain its lock until cancellation.
+    }
   }
-  remainingTime(dependencies, deadline)
+
+  const bytes = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  const text = new TextDecoder().decode(bytes)
   if (!text || text.length > MAX_RESULT_BYTES) return null
   try {
     return JSON.parse(text) as unknown
@@ -338,24 +404,31 @@ async function transcribe(
   const commonHeaders = {
     authorization: `Bearer ${apiKey}`,
   }
+  const policySignal = deadlineSignal(
+    dependencies,
+    deadline,
+    requestSignal,
+    REQUEST_TIMEOUT_MS,
+  )
   const policyResponse = await fetchUpstream(
     dependencies.fetcher,
     `${origin}/api/v1/uploads?action=getPolicy&model=${encodeURIComponent(model)}`,
     {
       method: 'GET',
       headers: commonHeaders,
-      signal: deadlineSignal(
-        dependencies,
-        deadline,
-        requestSignal,
-        REQUEST_TIMEOUT_MS,
-      ),
+      redirect: 'error',
+      signal: policySignal,
     },
     dependencies,
     deadline,
   )
   const policy = parseUploadPolicy(
-    await safeJson(policyResponse, dependencies, deadline),
+    await safeJson(
+      policyResponse,
+      dependencies,
+      deadline,
+      policySignal,
+    ),
   )
   if (!policy) {
     throw new SpeechGatewayError(
@@ -376,6 +449,12 @@ async function transcribe(
   upload.append('key', objectKey)
   upload.append('success_action_status', '200')
   upload.append('file', audio)
+  const uploadSignal = deadlineSignal(
+    dependencies,
+    deadline,
+    requestSignal,
+    REQUEST_TIMEOUT_MS,
+  )
   await fetchUpstream(
     dependencies.fetcher,
     policy.uploadHost,
@@ -383,17 +462,18 @@ async function transcribe(
       method: 'POST',
       body: upload,
       redirect: 'error',
-      signal: deadlineSignal(
-        dependencies,
-        deadline,
-        requestSignal,
-        REQUEST_TIMEOUT_MS,
-      ),
+      signal: uploadSignal,
     },
     dependencies,
     deadline,
   )
 
+  const submitSignal = deadlineSignal(
+    dependencies,
+    deadline,
+    requestSignal,
+    REQUEST_TIMEOUT_MS,
+  )
   const submitResponse = await fetchUpstream(
     dependencies.fetcher,
     `${origin}/api/v1/services/audio/asr/transcription`,
@@ -410,18 +490,19 @@ async function transcribe(
         input: { file_urls: [`oss://${objectKey}`] },
         parameters: {},
       }),
-      signal: deadlineSignal(
-        dependencies,
-        deadline,
-        requestSignal,
-        REQUEST_TIMEOUT_MS,
-      ),
+      redirect: 'error',
+      signal: submitSignal,
     },
     dependencies,
     deadline,
   )
   const taskId = parseTaskId(
-    await safeJson(submitResponse, dependencies, deadline),
+    await safeJson(
+      submitResponse,
+      dependencies,
+      deadline,
+      submitSignal,
+    ),
   )
   if (!taskId) {
     throw new SpeechGatewayError(
@@ -433,24 +514,31 @@ async function transcribe(
 
   let resultUrl: string | null = null
   for (let attempt = 0; attempt < dependencies.maxPolls; attempt += 1) {
+    const pollSignal = deadlineSignal(
+      dependencies,
+      deadline,
+      requestSignal,
+      POLL_REQUEST_TIMEOUT_MS,
+    )
     const pollResponse = await fetchUpstream(
       dependencies.fetcher,
       `${origin}/api/v1/tasks/${taskId}`,
       {
         method: 'GET',
         headers: commonHeaders,
-        signal: deadlineSignal(
-          dependencies,
-          deadline,
-          requestSignal,
-          POLL_REQUEST_TIMEOUT_MS,
-        ),
+        redirect: 'error',
+        signal: pollSignal,
       },
       dependencies,
       deadline,
     )
     const task = parseTask(
-      await safeJson(pollResponse, dependencies, deadline),
+      await safeJson(
+        pollResponse,
+        dependencies,
+        deadline,
+        pollSignal,
+      ),
     )
     if (!task) {
       throw new SpeechGatewayError(
@@ -494,24 +582,30 @@ async function transcribe(
     )
   }
 
+  const resultSignal = deadlineSignal(
+    dependencies,
+    deadline,
+    requestSignal,
+    REQUEST_TIMEOUT_MS,
+  )
   const resultResponse = await fetchUpstream(
     dependencies.fetcher,
     resultUrl,
     {
       method: 'GET',
       redirect: 'error',
-      signal: deadlineSignal(
-        dependencies,
-        deadline,
-        requestSignal,
-        REQUEST_TIMEOUT_MS,
-      ),
+      signal: resultSignal,
     },
     dependencies,
     deadline,
   )
   const text = transcriptText(
-    await safeJson(resultResponse, dependencies, deadline),
+    await safeJson(
+      resultResponse,
+      dependencies,
+      deadline,
+      resultSignal,
+    ),
   )
   if (!text) {
     throw new SpeechGatewayError(

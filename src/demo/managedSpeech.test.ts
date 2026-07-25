@@ -108,6 +108,24 @@ function timerHarness() {
   }
 }
 
+function multiTimerHarness() {
+  const callbacks = new Map<number, () => void>()
+  let sequence = 0
+  const setTimeout = vi.fn((handler: () => void, _delay: number) => {
+    const handle = ++sequence
+    callbacks.set(handle, handler)
+    return handle
+  })
+  const clearTimeout = vi.fn((handle: unknown) => {
+    callbacks.delete(Number(handle))
+  })
+  return {
+    setTimeout,
+    clearTimeout,
+    fire: (handle: number) => callbacks.get(handle)?.(),
+  }
+}
+
 async function waitForRecorder(
   instances: unknown[],
 ) {
@@ -179,6 +197,72 @@ describe('managed browser speech adapter', () => {
     expect(recorder.instances[0]?.start).toHaveBeenCalledOnce()
     expect(recorder.instances[0]?.stop).toHaveBeenCalledOnce()
     expect(track.stop).toHaveBeenCalledOnce()
+  })
+
+  it('uses a separate permission watchdog and cleans up a late stream', async () => {
+    const pendingStream = deferred<MediaStream>()
+    const { stream, track } = mediaStream()
+    const recorder = recorderHarness()
+    const timers = multiTimerHarness()
+    const requester = vi.fn().mockResolvedValue('不应上传')
+    const speech = createManagedSpeech(requester, {
+      mediaDevices: {
+        getUserMedia: vi.fn(() => pendingStream.promise),
+      },
+      MediaRecorder: recorder.MediaRecorder,
+      setTimeout: timers.setTimeout,
+      clearTimeout: timers.clearTimeout,
+    })
+
+    const session = speech.start()
+    expect(timers.setTimeout).toHaveBeenCalledTimes(1)
+    expect(timers.setTimeout).toHaveBeenCalledWith(
+      expect.any(Function),
+      15_000,
+    )
+    timers.fire(1)
+    await expect(session.result).resolves.toBe(
+      MANAGED_SPEECH_FALLBACK,
+    )
+    pendingStream.resolve(stream)
+
+    await vi.waitFor(() => expect(track.stop).toHaveBeenCalledOnce())
+    expect(recorder.instances).toHaveLength(0)
+    expect(requester).not.toHaveBeenCalled()
+  })
+
+  it('starts the recording timer only after permission and recorder start', async () => {
+    const pendingStream = deferred<MediaStream>()
+    const { stream } = mediaStream()
+    const recorder = recorderHarness()
+    const timers = multiTimerHarness()
+    const speech = createManagedSpeech(
+      vi.fn().mockResolvedValue('录音成功'),
+      {
+        mediaDevices: {
+          getUserMedia: vi.fn(() => pendingStream.promise),
+        },
+        MediaRecorder: recorder.MediaRecorder,
+        setTimeout: timers.setTimeout,
+        clearTimeout: timers.clearTimeout,
+      },
+    )
+
+    const session = speech.start()
+    expect(timers.setTimeout).toHaveBeenCalledTimes(1)
+    pendingStream.resolve(stream)
+    await waitForRecorder(recorder.instances)
+
+    expect(recorder.instances[0]?.start).toHaveBeenCalledWith(500)
+    expect(timers.clearTimeout).toHaveBeenCalledWith(1)
+    expect(timers.setTimeout).toHaveBeenCalledTimes(2)
+    expect(
+      recorder.instances[0]!.start.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      timers.setTimeout.mock.invocationCallOrder[1]!,
+    )
+    session.stop()
+    await expect(session.result).resolves.toBe('录音成功')
   })
 
   it('automatically stops recording after 15 seconds', async () => {

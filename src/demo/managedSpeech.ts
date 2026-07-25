@@ -22,6 +22,7 @@ export const MANAGED_SPEECH_FALLBACK = '买两盒牛奶'
 export const MAX_MANAGED_AUDIO_BYTES = 3 * 1024 * 1024
 
 const MAX_RECORDING_MS = 15_000
+const PERMISSION_TIMEOUT_MS = 15_000
 const PREFERRED_MIME_TYPES = [
   'audio/webm;codecs=opus',
   'audio/webm',
@@ -71,16 +72,15 @@ export function createManagedSpeech(
           rejectRecording?.()
         }
       }
-      const timer = schedule(stop, MAX_RECORDING_MS)
 
       const result = (async () => {
         let stream: MediaStream | undefined
+        let permissionTimer: unknown
+        let recordingTimer: unknown
         let tracksStopped = false
-        const stopTracks = () => {
-          if (!stream || tracksStopped) return
-          tracksStopped = true
+        const stopStreamTracks = (candidate: MediaStream) => {
           try {
-            for (const track of stream.getTracks()) {
+            for (const track of candidate.getTracks()) {
               try {
                 track.stop()
               } catch {
@@ -90,6 +90,11 @@ export function createManagedSpeech(
           } catch {
             // A partial MediaStream must not reject the speech fallback.
           }
+        }
+        const stopTracks = () => {
+          if (!stream || tracksStopped) return
+          tracksStopped = true
+          stopStreamTracks(stream)
         }
         try {
           const mediaDevices =
@@ -108,7 +113,36 @@ export function createManagedSpeech(
           )
           if (!mimeType) return MANAGED_SPEECH_FALLBACK
 
-          stream = await mediaDevices.getUserMedia({ audio: true })
+          let permissionExpired = false
+          const requestedStream = Promise.resolve().then(() =>
+            mediaDevices.getUserMedia({ audio: true }),
+          )
+          const acquiredStream = requestedStream.then(
+            (candidate) => {
+              if (permissionExpired) {
+                stopStreamTracks(candidate)
+                return undefined
+              }
+              return candidate
+            },
+            () => undefined,
+          )
+          const permissionTimeout = new Promise<undefined>((resolve) => {
+            permissionTimer = schedule(() => {
+              permissionExpired = true
+              resolve(undefined)
+            }, PERMISSION_TIMEOUT_MS)
+          })
+          stream = await Promise.race([
+            acquiredStream,
+            permissionTimeout,
+          ])
+          if (permissionTimer !== undefined) {
+            cancel(permissionTimer)
+            permissionTimer = undefined
+          }
+          if (!stream) return MANAGED_SPEECH_FALLBACK
+
           const chunks: Blob[] = []
           let recordedBytes = 0
           let overflow = false
@@ -130,6 +164,7 @@ export function createManagedSpeech(
               reject(new Error('recording failed'))
           })
           recorder.start(500)
+          recordingTimer = schedule(stop, MAX_RECORDING_MS)
           if (stopRequested) stop()
           await stopped
           stopTracks()
@@ -152,7 +187,8 @@ export function createManagedSpeech(
         } catch {
           return MANAGED_SPEECH_FALLBACK
         } finally {
-          cancel(timer)
+          if (permissionTimer !== undefined) cancel(permissionTimer)
+          if (recordingTimer !== undefined) cancel(recordingTimer)
           stopTracks()
         }
       })()
