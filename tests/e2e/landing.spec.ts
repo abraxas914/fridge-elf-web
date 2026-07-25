@@ -24,7 +24,9 @@ test('landing page links the latest APK and opens the demo without leaving the d
 
   await page.goto('/')
   await expect(
-    page.getByRole('heading', { name: '把冰箱里的食材，变成今天的一餐' }),
+    page.getByRole('heading', {
+      name: '让冰箱里的每一份食材，都有始有终。',
+    }),
   ).toBeVisible()
   await expect(page.getByRole('heading', { name: 'v1.2.3' })).toBeVisible()
   await expect(page.getByRole('link', { name: '下载 Android APK' })).toHaveAttribute(
@@ -35,6 +37,29 @@ test('landing page links the latest APK and opens the demo without leaving the d
   await page.getByRole('link', { name: '打开在线 Demo' }).click()
   await expect(page).toHaveURL(/\/demo$/)
   await expect(page.getByRole('heading', { name: '冰箱生活助手' })).toBeVisible()
+})
+
+test('desktop navigation reaches the product-level IoT story', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.route('**/api/releases/latest', async (route) => {
+    await route.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: { message: '暂无正式版本' } }),
+    })
+  })
+
+  await page.goto('/')
+  await page
+    .getByRole('navigation', { name: '产品介绍章节' })
+    .getByRole('link', { name: '家庭 IoT' })
+    .click()
+
+  await expect(page.locator('#iot')).toBeInViewport()
+  await expect(page.getByText('家庭共享库存')).toBeVisible()
+  await expect(page.getByText(/T5AI|MQTT|DashScope/)).toHaveCount(0)
 })
 
 test('desktop demo stage stays centered in the browser viewport', async ({
