@@ -37,6 +37,7 @@ function streamedRequest(
         authorization: sessionAuthorization(),
         'content-type':
           'multipart/form-data; boundary=fridge-elf-test',
+        'x-request-id': 'mobile-speech-123',
         ...headers,
       },
       url: '/api/demo/transcribe',
@@ -138,6 +139,9 @@ describe('Demo transcription Node request boundary', () => {
     )
 
     expect(response.status).toBe(413)
+    expect(response.headers.get('x-request-id')).toBe(
+      'mobile-speech-123',
+    )
     expect(streamed.consumed()).toBe(0)
     expect(destroy).toHaveBeenCalledOnce()
   })

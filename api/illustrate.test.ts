@@ -36,6 +36,7 @@ function request(
           options.authorization ?? `Bearer ${token}`,
         'content-type': 'application/json',
         origin: options.origin ?? 'https://fridgeelf.rth1.xyz',
+        'x-request-id': 'mobile-image-123',
       },
       body: method === 'POST' ? JSON.stringify(body) : undefined,
     },
@@ -59,6 +60,9 @@ describe('anonymous demo illustration BFF', () => {
     )
     expect(response.headers.get('access-control-allow-headers')).toContain(
       'authorization',
+    )
+    expect(response.headers.get('access-control-allow-headers')).toContain(
+      'x-request-id',
     )
   })
 
@@ -94,6 +98,9 @@ describe('anonymous demo illustration BFF', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toBe('image/png')
+    expect(response.headers.get('x-request-id')).toBe(
+      'mobile-image-123',
+    )
     expect(response.headers.get('access-control-allow-origin')).toBe(
       'https://fridgeelf.rth1.xyz',
     )

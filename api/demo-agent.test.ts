@@ -47,6 +47,7 @@ function authorizedRequest(
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
         origin: options.origin ?? 'https://fridge-elf-app.vercel.app',
+        'x-request-id': 'mobile-agent-123',
       },
       body:
         (options.method ?? 'POST') === 'POST'
@@ -142,6 +143,9 @@ describe('stateless demo agent BFF', () => {
     )
 
     expect(response.status).toBe(200)
+    expect(response.headers.get('x-request-id')).toBe(
+      'mobile-agent-123',
+    )
     expect(await response.json()).toEqual({
       answer: '先用今天临期的番茄配鸡蛋。',
       suggestions: [

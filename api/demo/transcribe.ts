@@ -1,4 +1,5 @@
 import { demoCorsHeaders, demoJsonError } from '../_lib/demoCors.js'
+import { beginDemoRequestTrace } from '../_lib/demoCors.js'
 import {
   handleDemoTranscribeRequest,
   preflightDemoTranscribeRequest,
@@ -220,6 +221,37 @@ export async function handleTranscribeNodeRequest(
   request: NodeRequest,
   environment: TranscribeEnvironment,
   dependencies: NodeTranscribeDependencies = {},
+) {
+  const headers = nodeHeaders(request)
+  const method = request.method ?? 'GET'
+  const url = new URL(
+    request.url ?? '/api/demo/transcribe',
+    'https://demo.local',
+  )
+  const trace = beginDemoRequestTrace(
+    new Request(url, { method, headers }),
+    '/api/demo/transcribe',
+  )
+  try {
+    const response = await handleTranscribeNodeRequestCore(
+      request,
+      environment,
+      dependencies,
+    )
+    if (response.status >= 500) {
+      trace.upstreamFailure('UPSTREAM_TRANSCRIPTION_FAILED', response.status)
+    }
+    return trace.finish(response)
+  } catch {
+    trace.failed('UNHANDLED_SERVER_ERROR')
+    throw new Error('Demo transcription request failed')
+  }
+}
+
+async function handleTranscribeNodeRequestCore(
+  request: NodeRequest,
+  environment: TranscribeEnvironment,
+  dependencies: NodeTranscribeDependencies,
 ) {
   const headers = nodeHeaders(request)
   const method = request.method ?? 'GET'

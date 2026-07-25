@@ -10,7 +10,10 @@ const secret = 'demo-session-secret-for-tests'
 function request(origin: string, method = 'POST') {
   return new Request('https://fridge-elf-app.vercel.app/api/demo/session', {
     method,
-    headers: { origin },
+    headers: {
+      origin,
+      'x-request-id': 'mobile-session-123',
+    },
   })
 }
 
@@ -28,6 +31,12 @@ describe('anonymous demo session', () => {
       'https://fridgeelf.rth1.xyz',
     )
     expect(response.headers.get('cache-control')).toBe('no-store')
+    expect(response.headers.get('x-request-id')).toBe(
+      'mobile-session-123',
+    )
+    expect(
+      response.headers.get('access-control-expose-headers'),
+    ).toContain('x-request-id')
     const payload = await response.json()
     expect(payload.expiresAt).toBe('2026-07-25T14:00:00.000Z')
     expect(verifyDemoSession(payload.token, secret, now)).toBe(true)
@@ -44,6 +53,9 @@ describe('anonymous demo session', () => {
       'POST',
     )
     expect(response.headers.get('vary')).toBe('Origin')
+    expect(response.headers.get('access-control-allow-headers')).toContain(
+      'x-request-id',
+    )
   })
 
   it('rejects an unapproved browser origin', async () => {

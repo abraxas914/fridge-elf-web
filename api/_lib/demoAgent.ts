@@ -1,4 +1,8 @@
-import { demoCorsHeaders, demoJsonError } from './demoCors.js'
+import {
+  beginDemoRequestTrace,
+  demoCorsHeaders,
+  demoJsonError,
+} from './demoCors.js'
 import {
   verifyDemoSession,
   type DemoEnvironment,
@@ -252,7 +256,36 @@ export async function handleDemoAgentRequest(
   mode: 'agent' | 'recommend',
   fetcher: Fetcher = fetch,
 ) {
-  const cors = demoCorsHeaders(request)
+  const route =
+    mode === 'agent'
+      ? '/api/demo/agent'
+      : '/api/demo/recommend'
+  const trace = beginDemoRequestTrace(request, route)
+  try {
+    const response = await handleDemoAgentRequestCore(
+      request,
+      environment,
+      mode,
+      fetcher,
+      trace.requestId,
+      trace,
+    )
+    return trace.finish(response)
+  } catch {
+    trace.failed('UNHANDLED_SERVER_ERROR')
+    throw new Error('Demo agent request failed')
+  }
+}
+
+async function handleDemoAgentRequestCore(
+  request: Request,
+  environment: DemoAgentEnvironment,
+  mode: 'agent' | 'recommend',
+  fetcher: Fetcher,
+  requestId: string,
+  trace: ReturnType<typeof beginDemoRequestTrace>,
+) {
+  const cors = demoCorsHeaders(request, requestId)
   if (!cors) {
     return demoJsonError(
       403,
@@ -347,6 +380,7 @@ export async function handleDemoAgentRequest(
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     })
     if (upstream.status === 429) {
+      trace.upstreamFailure('UPSTREAM_RATE_LIMITED', 429)
       const retryAfter = upstream.headers.get('retry-after')
       if (retryAfter && /^\d{1,4}$/.test(retryAfter)) {
         cors.set('retry-after', retryAfter)
@@ -359,6 +393,7 @@ export async function handleDemoAgentRequest(
       )
     }
     if (!upstream.ok) {
+      trace.upstreamFailure('UPSTREAM_HTTP_ERROR', upstream.status)
       return demoJsonError(
         502,
         'AGENT_UNAVAILABLE',
@@ -382,6 +417,7 @@ export async function handleDemoAgentRequest(
         ? parseGatewayContent(content, snapshot)
         : null
     if (!response) {
+      trace.upstreamFailure('UPSTREAM_RESPONSE_INVALID', 502)
       return demoJsonError(
         502,
         'AGENT_UNAVAILABLE',
@@ -391,6 +427,7 @@ export async function handleDemoAgentRequest(
     }
     return Response.json(response, { headers: cors })
   } catch {
+    trace.upstreamFailure('UPSTREAM_NETWORK_ERROR', 502)
     return demoJsonError(
       502,
       'AGENT_UNAVAILABLE',

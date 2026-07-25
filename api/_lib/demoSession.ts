@@ -3,7 +3,11 @@ import {
   randomUUID,
   timingSafeEqual,
 } from 'node:crypto'
-import { demoCorsHeaders, demoJsonError } from './demoCors.js'
+import {
+  beginDemoRequestTrace,
+  demoCorsHeaders,
+  demoJsonError,
+} from './demoCors.js'
 
 export interface DemoEnvironment {
   DEMO_SESSION_SECRET?: string
@@ -66,7 +70,27 @@ export function handleDemoSessionRequest(
   environment: DemoEnvironment,
   now = Date.now(),
 ) {
-  const cors = demoCorsHeaders(request)
+  const trace = beginDemoRequestTrace(
+    request,
+    '/api/demo/session',
+  )
+  return trace.finish(
+    handleDemoSessionRequestCore(
+      request,
+      environment,
+      now,
+      trace.requestId,
+    ),
+  )
+}
+
+function handleDemoSessionRequestCore(
+  request: Request,
+  environment: DemoEnvironment,
+  now: number,
+  requestId: string,
+) {
+  const cors = demoCorsHeaders(request, requestId)
   if (!cors) {
     return demoJsonError(
       403,

@@ -8,7 +8,11 @@ import {
   type IllustrationStyleId,
   type RecipePlan,
 } from '../../src/illustration/recipePlan.js'
-import { demoCorsHeaders, demoJsonError } from './demoCors.js'
+import {
+  beginDemoRequestTrace,
+  demoCorsHeaders,
+  demoJsonError,
+} from './demoCors.js'
 import {
   verifyDemoSession,
   type DemoEnvironment,
@@ -211,7 +215,38 @@ export async function handleIllustrationRequest(
   sleep: (milliseconds: number) => Promise<unknown> = (milliseconds) =>
     new Promise((resolve) => setTimeout(resolve, milliseconds)),
 ) {
-  const cors = demoCorsHeaders(request)
+  const trace = beginDemoRequestTrace(request, '/api/illustrate')
+  try {
+    const response = await handleIllustrationRequestCore(
+      request,
+      environment,
+      fetcher,
+      sleep,
+      trace.requestId,
+    )
+    if (response.status >= 500) {
+      trace.upstreamFailure(
+        response.status === 503
+          ? 'UPSTREAM_NOT_CONFIGURED'
+          : 'UPSTREAM_IMAGE_FAILED',
+        response.status,
+      )
+    }
+    return trace.finish(response)
+  } catch {
+    trace.failed('UNHANDLED_SERVER_ERROR')
+    throw new Error('Demo illustration request failed')
+  }
+}
+
+async function handleIllustrationRequestCore(
+  request: Request,
+  environment: IllustrationEnvironment,
+  fetcher: Fetcher,
+  sleep: (milliseconds: number) => Promise<unknown>,
+  requestId: string,
+) {
+  const cors = demoCorsHeaders(request, requestId)
   if (!cors) {
     return demoJsonError(
       403,
