@@ -1,0 +1,199 @@
+.network-diagnostics-trigger {
+  position: fixed;
+  z-index: 700;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  display: grid;
+  min-width: 54px;
+  min-height: 44px;
+  place-items: center;
+  border: 3px solid var(--border);
+  background: var(--coral);
+  box-shadow: 3px 3px 0 var(--border);
+  color: var(--panel-3);
+  cursor: pointer;
+  font-family: "Silkscreen", monospace;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.network-diagnostics-trigger span {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  padding: 3px;
+  border: 2px solid var(--border);
+  background: var(--butter);
+  color: var(--text);
+  font-size: 9px;
+}
+
+.network-diagnostics-mask {
+  position: fixed;
+  z-index: 900;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(20 16 10 / 68%);
+}
+
+.network-diagnostics-panel {
+  display: flex;
+  width: min(100%, 520px);
+  max-height: min(82dvh, 760px);
+  padding:
+    14px
+    max(14px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+  flex-direction: column;
+  gap: 12px;
+  border: 4px solid var(--border);
+  border-bottom: 0;
+  background: var(--panel);
+  box-shadow: 0 -6px 0 var(--butter);
+  color: var(--text);
+  user-select: text;
+}
+
+.network-diagnostics-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 3px dashed var(--text-lt);
+  padding-bottom: 10px;
+}
+
+.network-diagnostics-header strong {
+  display: block;
+  font-size: 18px;
+}
+
+.network-diagnostics-header small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-mid);
+  font-family: "Silkscreen", monospace;
+  font-size: 8px;
+}
+
+.network-diagnostics-header button {
+  width: 38px;
+  height: 38px;
+  border: 3px solid var(--border);
+  background: var(--coral);
+  box-shadow: 2px 2px 0 var(--border);
+  color: white;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.network-diagnostics-environment {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 2px solid var(--text-lt);
+  background: var(--panel-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.network-diagnostics-environment b {
+  color: var(--coral-dk);
+}
+
+.network-diagnostics-ua {
+  overflow-wrap: anywhere;
+}
+
+.network-diagnostics-events {
+  min-height: 92px;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.network-diagnostics-empty {
+  display: grid;
+  min-height: 92px;
+  place-items: center;
+  border: 2px dashed var(--text-lt);
+  color: var(--text-mid);
+  font-size: 13px;
+}
+
+.network-diagnostics-event {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 8px;
+  margin-bottom: 8px;
+  padding: 9px;
+  border: 2px solid var(--border);
+  border-left: 7px solid var(--navy);
+  background: var(--panel-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.network-diagnostics-event.is-success {
+  border-left-color: var(--sage-dk);
+}
+
+.network-diagnostics-event.is-failure {
+  border-left-color: var(--coral);
+}
+
+.network-diagnostics-event small {
+  color: var(--text-mid);
+  text-align: right;
+}
+
+.network-diagnostics-event code {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--text-lt);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.network-diagnostics-status {
+  padding: 8px;
+  border: 2px dashed var(--sage-dk);
+  background: rgb(122 153 104 / 14%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.network-diagnostics-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.network-diagnostics-actions button {
+  min-height: 42px;
+  padding: 6px;
+  border: 2px solid var(--border);
+  background: var(--butter);
+  box-shadow: 2px 2px 0 var(--border);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.network-diagnostics-actions button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+@media (min-width: 720px) {
+  .network-diagnostics-panel {
+    margin-bottom: 24px;
+    border-bottom: 4px solid var(--border);
+  }
+}

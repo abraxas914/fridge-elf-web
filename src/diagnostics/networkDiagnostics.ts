@@ -71,7 +71,7 @@ function storageAvailable() {
   }
 }
 
-function browserReport() {
+export function getNetworkDiagnosticsEnvironment() {
   const signal = globalThis.AbortSignal as typeof AbortSignal & {
     timeout?: unknown
   }
@@ -136,7 +136,7 @@ export function createNetworkDiagnosticsStore(
         {
           version: 1,
           generatedAt: new Date().toISOString(),
-          page: browserReport(),
+          page: getNetworkDiagnosticsEnvironment(),
           events: snapshot.events,
         },
         null,

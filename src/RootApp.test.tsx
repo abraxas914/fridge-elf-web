@@ -53,6 +53,18 @@ describe('RootApp', () => {
     window.history.replaceState({}, '', '/demo')
     render(<RootApp />)
     expect(await screen.findByText(/DEMO APP 1/)).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: '网络诊断' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders opt-in network diagnostics at /demo?debug=network', async () => {
+    window.history.replaceState({}, '', '/demo?debug=network')
+    render(<RootApp />)
+    expect(await screen.findByText(/DEMO APP 1/)).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: '网络诊断' }),
+    ).toBeVisible()
   })
 
   it('renders the interactive application when the host canonicalizes /demo/', async () => {

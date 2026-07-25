@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { createDemoRuntime } from './demo/demoRuntime'
 import { LandingPage } from './LandingPage'
+import { NetworkDiagnosticsPanel } from './diagnostics/NetworkDiagnosticsPanel'
 
 const DemoApp = lazy(() =>
   import('./App').then((module) => ({ default: module.App })),
@@ -34,23 +35,26 @@ export function RootApp() {
 
   if (route === 'demo') {
     return (
-      <Suspense fallback={<div className="route-loading">正在打开 Demo…</div>}>
-        <DemoApp
-          key={demoSession.key}
-          inventoryRuntime={demoSession.runtime}
-          onRestartDemo={() =>
-            setDemoSession((current) => {
-              current.runtime.dispose()
-              const runtime = createDemoRuntime()
-              demoRuntimeRef.current = runtime
-              return {
-                key: current.key + 1,
-                runtime,
-              }
-            })
-          }
-        />
-      </Suspense>
+      <>
+        <Suspense fallback={<div className="route-loading">正在打开 Demo…</div>}>
+          <DemoApp
+            key={demoSession.key}
+            inventoryRuntime={demoSession.runtime}
+            onRestartDemo={() =>
+              setDemoSession((current) => {
+                current.runtime.dispose()
+                const runtime = createDemoRuntime()
+                demoRuntimeRef.current = runtime
+                return {
+                  key: current.key + 1,
+                  runtime,
+                }
+              })
+            }
+          />
+        </Suspense>
+        <NetworkDiagnosticsPanel />
+      </>
     )
   }
 
