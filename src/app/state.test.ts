@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import type { ClockPort } from './ports'
 import {
   appReducer,
+  createInitialAppState,
   createDisplaySleepController,
   createTypewriterController,
   deriveMissingIngredients,
   initialAppState,
   type AppAction,
 } from './state'
+import { createMemoryStorage } from '../demo/memoryStorage'
 import { TAB_ORDER, type AppState } from './types'
 
 class FakeClock implements ClockPort {
@@ -45,6 +47,24 @@ class FakeClock implements ClockPort {
 }
 
 describe('Life Helper state', () => {
+  it('loads planner state from the injected demo store', () => {
+    const storage = createMemoryStorage()
+    storage.setItem(
+      'fridge-planner-v2',
+      JSON.stringify({
+        mon: {
+          breakfast: null,
+          lunch: null,
+          dinner: 'recipe-tomato-egg-bowl',
+        },
+      }),
+    )
+
+    expect(createInitialAppState(storage).planner.mon.dinner).toBe(
+      'recipe-tomato-egg-bowl',
+    )
+  })
+
   it('enters the app on the fridge tab and keeps the HTML tab order', () => {
     expect(TAB_ORDER).toEqual(['shop', 'recipe', 'fridge', 'note', 'me'])
     const state = appReducer(initialAppState, { type: 'enter-app' })
@@ -139,28 +159,66 @@ describe('Life Helper state', () => {
     const assigned = appReducer(initialAppState, {
       type: 'assign-recipe',
       day: 'wed',
+      meal: 'dinner',
       recipeId: 'recipe-tomato-egg-bowl',
     })
     const replaced = appReducer(assigned, {
       type: 'assign-recipe',
       day: 'wed',
+      meal: 'dinner',
       recipeId: 'recipe-salmon-rice',
     })
-    expect(replaced.planner.wed).toBe('recipe-salmon-rice')
+    expect(replaced.planner.wed.dinner).toBe('recipe-salmon-rice')
     expect(
-      appReducer(replaced, { type: 'clear-recipe', day: 'wed' }).planner.wed,
+      appReducer(replaced, {
+        type: 'clear-recipe',
+        day: 'wed',
+        meal: 'dinner',
+      }).planner.wed.dinner,
     ).toBeNull()
+  })
+
+  it('keeps breakfast, lunch, and dinner assignments independent', () => {
+    const breakfast = appReducer(initialAppState, {
+      type: 'assign-recipe',
+      day: 'mon',
+      meal: 'breakfast',
+      recipeId: 'recipe-banana-pancake',
+    })
+    const dinner = appReducer(breakfast, {
+      type: 'assign-recipe',
+      day: 'mon',
+      meal: 'dinner',
+      recipeId: 'recipe-tomato-egg-bowl',
+    })
+
+    expect(dinner.planner.mon).toEqual({
+      breakfast: 'recipe-banana-pancake',
+      lunch: null,
+      dinner: 'recipe-tomato-egg-bowl',
+    })
+  })
+
+  it('uses the approved calendar display mode', () => {
+    const state = appReducer(initialAppState, {
+      type: 'set-display-mode',
+      mode: 'calendar',
+    })
+
+    expect(state.displayMode).toBe('calendar')
   })
 
   it('derives only missing planner ingredients in HTML order', () => {
     const planned = appReducer(initialAppState, {
       type: 'assign-recipe',
       day: 'wed',
+      meal: 'dinner',
       recipeId: 'recipe-salmon-rice',
     })
     const withBreakfast = appReducer(planned, {
       type: 'assign-recipe',
       day: 'thu',
+      meal: 'breakfast',
       recipeId: 'recipe-banana-pancake',
     })
 

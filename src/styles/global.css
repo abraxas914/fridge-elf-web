@@ -15,12 +15,6 @@ body,
   overflow: hidden;
 }
 
-#root {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 html,
 body {
   background: #1a1610;
@@ -81,17 +75,6 @@ button {
 :focus-visible {
   outline: 3px solid var(--butter);
   outline-offset: 3px;
-}
-
-.route-loading {
-  display: grid;
-  width: 100%;
-  height: 100dvh;
-  place-items: center;
-  color: var(--panel-3);
-  font-family: "Silkscreen", monospace;
-  font-size: 10px;
-  background: var(--navy-dk);
 }
 
 @media (prefers-reduced-motion: reduce) {

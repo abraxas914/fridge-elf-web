@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { mapNativeInventoryItem } from '../../app/inventoryMapper'
 import type { PresentedFood } from '../../app/types'
@@ -8,17 +14,17 @@ import { FridgeScene } from './FridgeScene'
 import { GOLDEN_PRESENTED_FOODS } from './foodPresentation'
 
 describe('FridgeScene', () => {
-  it('ports the prototype storage, stats, and three-column inventory', () => {
+  it('derives batch and freshness stats without a fixed capacity', () => {
     render(
       <FridgeScene items={GOLDEN_PRESENTED_FOODS} onOpenFood={vi.fn()} />,
     )
 
-    expect(screen.getAllByTestId('storage-segment')).toHaveLength(12)
-    expect(screen.getByText('FILLING · 空间紧张')).toBeVisible()
-    expect(screen.getByText('BOX · 还有 6 个位置 · 空间紧张')).toBeVisible()
+    expect(screen.getByLabelText('库存新鲜度分布')).toBeVisible()
+    expect(screen.getByText('LIVE · 实时库存')).toBeVisible()
+    expect(screen.getByText(/18 个录入批次 · 无虚构容量上限/)).toBeVisible()
     expect(screen.getByText('总食材').previousSibling).toHaveTextContent('18')
-    expect(screen.getByText('将过期').previousSibling).toHaveTextContent('3')
-    expect(screen.getByText('紧急').previousSibling).toHaveTextContent('2')
+    expect(screen.getByText('将过期').previousSibling).toHaveTextContent('5')
+    expect(screen.getByText('紧急').previousSibling).toHaveTextContent('3')
     expect(document.querySelectorAll('.food-item')).toHaveLength(18)
   })
 
@@ -31,6 +37,24 @@ describe('FridgeScene', () => {
 
     expect(screen.getByRole('button', { name: '牛奶，1L' })).toBeVisible()
     expect(document.querySelectorAll('.food-item')).toHaveLength(1)
+  })
+
+  it('filters inventory by freshness summary and combines it with category', () => {
+    render(
+      <FridgeScene items={GOLDEN_PRESENTED_FOODS} onOpenFood={vi.fn()} />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /将过期/ }))
+    expect(document.querySelectorAll('.food-item')).toHaveLength(5)
+
+    fireEvent.click(screen.getByRole('button', { name: '食材' }))
+    expect(document.querySelectorAll('.food-item')).toHaveLength(5)
+
+    fireEvent.click(screen.getByRole('button', { name: /紧急/ }))
+    expect(document.querySelectorAll('.food-item')).toHaveLength(3)
+
+    fireEvent.click(screen.getByRole('button', { name: /总食材/ }))
+    expect(document.querySelectorAll('.food-item')).toHaveLength(14)
   })
 
   it('renders critical timing, badge, and mold overlay', () => {
@@ -120,6 +144,31 @@ describe('FridgeScene', () => {
 
     expect(document.querySelectorAll('.food-item')).toHaveLength(3)
     expect(screen.getByRole('button', { name: '番茄，4个' })).toBeVisible()
+  })
+
+  it('offers the same manual and hold-to-talk entry actions', async () => {
+    const onToast = vi.fn()
+    const stop = vi.fn()
+    render(
+      <FridgeScene
+        items={[]}
+        onOpenFood={vi.fn()}
+        onAddFood={vi.fn()}
+        onVoiceStart={() => ({ stop, result: Promise.resolve(2) })}
+        onToast={onToast}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /手动添加/ })).toHaveClass(
+      'entry-action',
+    )
+    const voice = screen.getByRole('button', { name: /按住说话/ })
+    Object.defineProperty(voice, 'setPointerCapture', { value: vi.fn() })
+    expect(voice).toHaveClass('entry-action', 'voice')
+    fireEvent.pointerDown(voice, { pointerId: 1 })
+    fireEvent.pointerUp(voice, { pointerId: 1 })
+    expect(stop).toHaveBeenCalledOnce()
+    await waitFor(() => expect(onToast).toHaveBeenCalledWith('语音添加 2 项食物'))
   })
 })
 

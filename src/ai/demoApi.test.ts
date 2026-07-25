@@ -4,6 +4,7 @@ import {
   getDemoSession,
   requestDemoAgent,
   requestDemoIllustration,
+  requestDemoTranscription,
 } from './demoApi'
 import type { DemoWorldSnapshot } from './types'
 
@@ -157,6 +158,211 @@ describe('browser demo agent API', () => {
       'Bearer opaque-session-token',
     )
     expect(JSON.parse(init.body).styleId).toBe('xiaohei')
+  })
+
+  it.each([
+    [
+      'https://fridge-elf-app.vercel.app',
+      '/api/demo/transcribe',
+    ],
+    [
+      'https://fridgeelf.rth1.xyz',
+      'https://fridge-elf-app.vercel.app/api/demo/transcribe',
+    ],
+  ])(
+    'uploads browser audio through the managed BFF from %s',
+    async (pageOrigin, expectedUrl) => {
+      const storage = memoryStorage()
+      const fetcher = vi.fn()
+        .mockResolvedValueOnce(
+          Response.json({
+            token: 'opaque-session-token',
+            expiresAt: '2026-07-25T14:00:00.000Z',
+          }),
+        )
+        .mockResolvedValueOnce(
+          Response.json({
+            text: `  ${'声'.repeat(2_100)}  `,
+          }),
+        )
+
+      const text = await requestDemoTranscription(
+        new Blob(['voice'], {
+          type: 'audio/webm;codecs=opus',
+        }),
+        {
+          fetcher,
+          storage,
+          location: locationFor(pageOrigin),
+          now: () => Date.UTC(2026, 6, 25, 12),
+        },
+      )
+
+      expect(text).toBe('声'.repeat(2_000))
+      const [url, init] = fetcher.mock.calls[1]
+      expect(url).toBe(expectedUrl)
+      expect(init.method).toBe('POST')
+      const headers = new Headers(init.headers)
+      expect(headers.get('accept')).toBe('application/json')
+      expect(headers.get('authorization')).toBe(
+        'Bearer opaque-session-token',
+      )
+      expect(headers.has('content-type')).toBe(false)
+      expect(init.body).toBeInstanceOf(FormData)
+      const uploaded = (init.body as FormData).get('audio')
+      expect(uploaded).toBeInstanceOf(File)
+      expect((uploaded as File).name).toBe('voice.webm')
+      expect((uploaded as File).type).toBe(
+        'audio/webm;codecs=opus',
+      )
+      expect(init.signal).toBeInstanceOf(AbortSignal)
+    },
+  )
+
+  it('reuses one anonymous session across transcription requests', async () => {
+    const storage = memoryStorage()
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          token: 'opaque-session-token',
+          expiresAt: '2026-07-25T14:00:00.000Z',
+        }),
+      )
+      .mockImplementation(
+        async () => Response.json({ text: '买两盒牛奶' }),
+      )
+    const options = {
+      fetcher,
+      storage,
+      location: locationFor('https://fridgeelf.rth1.xyz'),
+      now: () => Date.UTC(2026, 6, 25, 12),
+    }
+
+    await requestDemoTranscription(
+      new Blob(['one'], { type: 'audio/ogg' }),
+      options,
+    )
+    await requestDemoTranscription(
+      new Blob(['two'], { type: 'audio/mp4' }),
+      options,
+    )
+
+    expect(fetcher).toHaveBeenCalledTimes(3)
+    expect(fetcher.mock.calls[0]?.[0]).toContain('/api/demo/session')
+    expect(fetcher.mock.calls[1]?.[0]).toContain(
+      '/api/demo/transcribe',
+    )
+    expect(fetcher.mock.calls[2]?.[0]).toContain(
+      '/api/demo/transcribe',
+    )
+  })
+
+  it.each([
+    [429, 'DEMO_RATE_LIMITED'],
+    [502, 'TRANSCRIPTION_UNAVAILABLE'],
+  ])(
+    'maps transcription HTTP %s without reading server details',
+    async (status, code) => {
+      const storage = memoryStorage()
+      const json = vi.fn()
+      const fetcher = vi.fn()
+        .mockResolvedValueOnce(
+          Response.json({
+            token: 'opaque-session-token',
+            expiresAt: '2026-07-25T14:00:00.000Z',
+          }),
+        )
+        .mockResolvedValueOnce({
+          ok: false,
+          status,
+          json,
+        })
+
+      await expect(
+        requestDemoTranscription(
+          new Blob(['voice'], { type: 'audio/ogg' }),
+          {
+            fetcher,
+            storage,
+            location: locationFor(
+              'https://fridge-elf-app.vercel.app',
+            ),
+            now: () => Date.UTC(2026, 6, 25, 12),
+          },
+        ),
+      ).rejects.toMatchObject({
+        name: 'DemoApiError',
+        code,
+        status,
+        message: 'Demo AI service unavailable',
+      })
+      expect(json).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each([
+    Response.json({ text: '' }),
+    Response.json({ text: 42 }),
+    Response.json([]),
+  ])('rejects malformed transcription JSON', async (response) => {
+    const storage = memoryStorage()
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          token: 'opaque-session-token',
+          expiresAt: '2026-07-25T14:00:00.000Z',
+        }),
+      )
+      .mockResolvedValueOnce(response)
+
+    await expect(
+      requestDemoTranscription(
+        new Blob(['voice'], { type: 'audio/mp4' }),
+        {
+          fetcher,
+          storage,
+          location: locationFor(
+            'https://fridge-elf-app.vercel.app',
+          ),
+          now: () => Date.UTC(2026, 6, 25, 12),
+        },
+      ),
+    ).rejects.toMatchObject({
+      code: 'TRANSCRIPTION_UNAVAILABLE',
+    })
+  })
+
+  it('uses a dedicated 135 second transcription timeout', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout')
+    try {
+      const storage = memoryStorage()
+      const fetcher = vi.fn()
+        .mockResolvedValueOnce(
+          Response.json({
+            token: 'opaque-session-token',
+            expiresAt: '2026-07-25T14:00:00.000Z',
+          }),
+        )
+        .mockResolvedValueOnce(
+          Response.json({ text: '买两盒牛奶' }),
+        )
+      await requestDemoTranscription(
+        new Blob(['voice'], { type: 'audio/webm' }),
+        {
+          fetcher,
+          storage,
+          location: locationFor(
+            'https://fridge-elf-app.vercel.app',
+          ),
+          now: () => Date.UTC(2026, 6, 25, 12),
+        },
+      )
+
+      expect(timeout).toHaveBeenNthCalledWith(1, 50_000)
+      expect(timeout).toHaveBeenNthCalledWith(2, 135_000)
+    } finally {
+      timeout.mockRestore()
+    }
   })
 
   it('surfaces a stable local error without leaking server payloads', async () => {

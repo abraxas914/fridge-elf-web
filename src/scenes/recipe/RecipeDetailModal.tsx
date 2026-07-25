@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react'
-import { GOLDEN_PRESENTED_FOODS } from '../fridge/foodPresentation'
+import type { RecipeIllustrationPort } from '../../app/ports'
+import {
+  createBrowserRecipeIllustrationMock,
+} from '../../bridge/browserMock'
+import { RecipeIllustrationPanel } from '../../features/recipeIllustration/RecipeIllustrationPanel'
 import type { Recipe } from './RecipeScene'
+import {
+  recipeDisplaySteps,
+  toIllustrationRecipe,
+} from './recipeContent'
+
+const previewIllustration = createBrowserRecipeIllustrationMock()
 
 export function PotTransition() {
   return (
@@ -36,7 +46,17 @@ export function PotTransition() {
   )
 }
 
-export function RecipeDetailModal({ recipe }: { recipe: Recipe }) {
+interface RecipeDetailModalProps {
+  recipe: Recipe
+  illustration?: RecipeIllustrationPort
+  managed?: boolean
+}
+
+export function RecipeDetailModal({
+  recipe,
+  illustration = previewIllustration,
+  managed = true,
+}: RecipeDetailModalProps) {
   const [ready, setReady] = useState(false)
   useEffect(() => {
     const timer = window.setTimeout(() => setReady(true), 950)
@@ -47,24 +67,19 @@ export function RecipeDetailModal({ recipe }: { recipe: Recipe }) {
     return <><PotTransition /><div className="recipe-generating">锅正在咕嘟咕嘟生成步骤…</div></>
   }
 
-  const names = recipe.need.map((key) =>
-    GOLDEN_PRESENTED_FOODS.find((food) => food.key === key)?.name ??
-    ({ rice: '米/藜麦', oat: '燕麦' } as Record<string, string>)[key] ??
-    key,
-  )
-  const steps = [
-    `取出 ${names.slice(0, 2).join(' + ')}，先清洗并切成小块。`,
-    '热锅少油，先下需要久煮的食材，再加入主料翻炒。',
-    '加入调味并小火收汁，按你的饮食模式减少油盐。',
-    '出锅前尝味，搭配冰箱里的新鲜蔬菜一起吃。',
-  ]
+  const steps = recipeDisplaySteps(recipe)
   return (
     <>
       <div className="modal-row"><span className="label">用时</span><span>{recipe.time} 分钟</span></div>
-      <div className="modal-row"><span className="label">热量</span><span>{recipe.kcal} kcal</span></div>
+      <div className="modal-row"><span className="label">热量</span><span>{recipe.kcal ?? '--'} kcal</span></div>
       <div className="modal-row"><span className="label">匹配</span><span>{recipe.match ? '冰箱有材料' : '需要补货'}</span></div>
       <div className="recipe-description">{recipe.desc}</div>
       <div className="recipe-step-list">{steps.map((step) => <div className="recipe-step" key={step}>{step}</div>)}</div>
+      <RecipeIllustrationPanel
+        recipe={toIllustrationRecipe(recipe)}
+        managed={managed}
+        illustration={illustration}
+      />
     </>
   )
 }

@@ -11,6 +11,54 @@ const item = {
   status: '新鲜',
 }
 
+const imageProviderMethods = {
+  getImageProviderSummary: () =>
+    JSON.stringify({
+      status: 'not_configured',
+      providerName: '',
+      host: '',
+      keyLast4: '',
+      model: 'gpt-image-2',
+    }),
+  saveImageProviderConfig: () =>
+    JSON.stringify({
+      status: 'saved',
+      providerName: 'Image2',
+      host: 'image.example',
+      keyLast4: '1234',
+      model: 'gpt-image-2',
+    }),
+  removeImageProviderConfig: () =>
+    JSON.stringify({
+      status: 'not_configured',
+      providerName: '',
+      host: '',
+      keyLast4: '',
+      model: 'gpt-image-2',
+    }),
+}
+
+const recipeIllustrationMethods = {
+  startRecipeIllustration: () =>
+    JSON.stringify({
+      id: 'job-1',
+      status: 'queued',
+      completedPages: 0,
+      totalPages: 1,
+      pages: [],
+    }),
+  getRecipeIllustrationJob: () =>
+    JSON.stringify({
+      id: 'job-1',
+      status: 'running',
+      completedPages: 0,
+      totalPages: 1,
+      pages: [],
+    }),
+  removeRecipeIllustrationJob: () =>
+    JSON.stringify({ removed: true }),
+}
+
 afterEach(() => {
   delete window.NativeBridge
   delete window.onNativeEvent
@@ -29,6 +77,8 @@ describe('createNativeInventoryPort', () => {
       addItem: () => JSON.stringify(item),
       getMqttStatus: () =>
         JSON.stringify({ connected: true, detail: '开发板已同步' }),
+      ...imageProviderMethods,
+      ...recipeIllustrationMethods,
       ready,
     }
 
@@ -65,6 +115,8 @@ describe('createNativeInventoryPort', () => {
       addItem: () => JSON.stringify(item),
       getMqttStatus: () =>
         JSON.stringify({ connected: false, detail: '连接中' }),
+      ...imageProviderMethods,
+      ...recipeIllustrationMethods,
       ready: vi.fn(),
     }
 

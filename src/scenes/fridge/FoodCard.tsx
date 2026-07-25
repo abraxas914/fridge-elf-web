@@ -34,6 +34,9 @@ export function FoodCard({ food, onOpen }: FoodCardProps) {
       onClick={() => onOpen(food)}
     >
       {expiry.moldy ? <span className="food-badge">!</span> : null}
+      {food.batchCount > 1 ? (
+        <span className="food-batch-badge">{food.batchCount} 批</span>
+      ) : null}
       <span className="food-icon-wrap">
         <FoodArt food={food} mold={expiry.moldy} />
       </span>

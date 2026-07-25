@@ -31,6 +31,7 @@ describe('Vercel API packaging', () => {
       'api/demo/session.ts',
       'api/demo/agent.ts',
       'api/demo/recommend.ts',
+      'api/demo/transcribe.ts',
       'api/illustrate.ts',
     ]) {
       expect(existsSync(resolve(entrypoint))).toBe(true)
@@ -41,10 +42,11 @@ describe('Vercel API packaging', () => {
     }
     expect(config.functions?.['api/demo/agent.ts']?.maxDuration).toBeGreaterThanOrEqual(60)
     expect(config.functions?.['api/demo/recommend.ts']?.maxDuration).toBeGreaterThanOrEqual(60)
+    expect(config.functions?.['api/demo/transcribe.ts']?.maxDuration).toBeGreaterThanOrEqual(300)
     expect(config.functions?.['api/illustrate.ts']?.maxDuration).toBeGreaterThanOrEqual(60)
   })
 
-  it('documents only empty server-side Demo variables', () => {
+  it('allows same-origin microphone capture and documents only empty server-side Demo variables', () => {
     const example = readFileSync(resolve('.env.example'), 'utf8')
     for (const name of [
       'DEMO_SESSION_SECRET',
@@ -54,10 +56,29 @@ describe('Vercel API packaging', () => {
       'HEADLESS_IMAGE_GATEWAY_BASE_URL',
       'HEADLESS_IMAGE_GATEWAY_API_KEY',
       'HEADLESS_IMAGE_GATEWAY_MODEL',
+      'HEADLESS_SPEECH_GATEWAY_BASE_URL',
+      'HEADLESS_SPEECH_GATEWAY_API_KEY',
+      'HEADLESS_SPEECH_GATEWAY_MODEL',
+      'HEADLESS_SPEECH_GATEWAY_PROTOCOL',
     ]) {
       expect(example).toMatch(new RegExp(`^${name}=$`, 'm'))
     }
+    const config = readFileSync(resolve('vercel.json'), 'utf8')
+    expect(config).toContain('microphone=(self)')
     expect(example).not.toMatch(/^VITE_.*(?:KEY|SECRET|TOKEN)=/m)
     expect(example).not.toMatch(/^sk-[A-Za-z0-9]/m)
+  })
+
+  it('documents the transcription route as a Vercel Firewall deployment invariant', () => {
+    const spec = readFileSync(
+      resolve('docs/WEB_PREVIEW_SPEC.md'),
+      'utf8',
+    )
+    expect(spec).toContain('Vercel Firewall')
+    expect(spec).toContain('/api/demo/transcribe')
+    expect(spec).toContain('麦克风仅允许同源 Demo 页面使用')
+    expect(spec).not.toContain(
+      '禁止 iframe、摄像头、麦克风和地理位置',
+    )
   })
 })

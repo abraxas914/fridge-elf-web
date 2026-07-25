@@ -35,6 +35,42 @@ export const FOOD_SVGS = {
     '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><polygon points="3,10 13,10 11,4 5,4" fill="#E8B84A" stroke="#2B2117" stroke-width="1"/><rect x="3" y="10" width="10" height="3" fill="#D9A868" stroke="#2B2117" stroke-width="1"/><circle cx="6" cy="7" r="0.8" fill="#F5D078"/><circle cx="9" cy="8" r="0.8" fill="#F5D078"/></svg>',
   butter:
     '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="3" y="6" width="10" height="6" fill="#F5D078" stroke="#2B2117" stroke-width="1"/><rect x="3" y="5" width="10" height="2" fill="#FBF3DB" stroke="#2B2117" stroke-width="1"/></svg>',
+  yogurt:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M3 5h10l-1 9H4z" fill="#FBF3DB" stroke="#2B2117"/><rect x="2" y="3" width="12" height="3" fill="#B8D5E0" stroke="#2B2117"/><circle cx="8" cy="10" r="2" fill="#E88A6A"/></svg>',
+  pork:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M3 6q2-3 5-2l5 2v6H3z" fill="#E89A9A" stroke="#2B2117"/><path d="M5 7h6M5 10h6" stroke="#FBF3DB"/></svg>',
+  fish:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M3 8l3-4h5l3 4-3 4H6z" fill="#79A9C8" stroke="#2B2117"/><path d="M3 8L1 5v6z" fill="#79A9C8" stroke="#2B2117"/><circle cx="11" cy="7" r="1" fill="#2B2117"/></svg>',
+  tofu:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M3 6l5-3 5 3-5 3z" fill="#FFF7D6" stroke="#2B2117"/><path d="M3 6v6l5 2V9zm10 0v6l-5 2V9z" fill="#F1DFA8" stroke="#2B2117"/></svg>',
+  bread:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M3 7q0-4 3-4h4q3 0 3 4v7H3z" fill="#D9A868" stroke="#2B2117"/><path d="M5 7q0-2 2-2h2q2 0 2 2v5H5z" fill="#F5D078"/></svg>',
+  rice:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M2 8h12l-2 6H4z" fill="#79A9C8" stroke="#2B2117"/><path d="M4 8q1-5 4-5t4 5z" fill="#FFF7D6" stroke="#2B2117"/><path d="M5 5l1 2m2-3v3m2-2l-1 2" stroke="#D8C9A5"/></svg>',
+  noodle:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M2 8h12l-2 6H4z" fill="#D96B4F" stroke="#2B2117"/><path d="M5 4v6m3-6v6m3-6v6" stroke="#E8B84A" stroke-width="1.5"/><path d="M4 4h8" stroke="#2B2117"/></svg>',
+  dumpling:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M2 11q6-10 12 0-6 5-12 0z" fill="#FFF7D6" stroke="#2B2117"/><path d="M4 10l2-2 2 2 2-2 2 2" fill="none" stroke="#D8C9A5"/></svg>',
+  broccoli:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="7" y="8" width="3" height="6" fill="#7A9968" stroke="#2B2117"/><circle cx="5" cy="7" r="3" fill="#5A7A4B" stroke="#2B2117"/><circle cx="9" cy="5" r="3" fill="#7A9968" stroke="#2B2117"/><circle cx="12" cy="8" r="2.5" fill="#5A7A4B" stroke="#2B2117"/></svg>',
+  mushroom:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M2 8q1-6 6-6t6 6z" fill="#D9A868" stroke="#2B2117"/><path d="M6 8h4l1 6H5z" fill="#FFF7D6" stroke="#2B2117"/><circle cx="6" cy="5" r="1" fill="#B87A5A"/><circle cx="10" cy="5" r="1" fill="#B87A5A"/></svg>',
+  pepper:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M5 5q-2 2-1 6t4 3q4 0 4-5 0-4-3-4z" fill="#D96B4F" stroke="#2B2117"/><path d="M8 5q0-3 3-3" fill="none" stroke="#5A7A4B" stroke-width="2"/></svg>',
+  lettuce:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M2 10q2-3 3-7l3 3 3-3 3 7-6 4z" fill="#8EBF76" stroke="#2B2117"/><path d="M8 6v7M5 7l3 3 3-3" fill="none" stroke="#5A7A4B"/></svg>',
+  orange:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><circle cx="8" cy="9" r="5" fill="#E8984A" stroke="#2B2117"/><path d="M8 4q1-3 4-2-1 3-4 2z" fill="#7A9968" stroke="#2B2117"/></svg>',
+  pear:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M7 4q-1 3-3 5-1 5 4 5t4-5q-2-2-3-5z" fill="#B9C96A" stroke="#2B2117"/><path d="M8 4V2m0 1q3-2 4 0" stroke="#5A4530" fill="none"/></svg>',
+  watermelon:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M2 5q6 14 12 0z" fill="#E86C6C" stroke="#2B2117"/><path d="M2 5h12" stroke="#5A7A4B" stroke-width="3"/><circle cx="6" cy="9" r=".6"/><circle cx="10" cy="9" r=".6"/></svg>',
+  lemon:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M2 8q3-6 6-5 4-1 6 5-2 6-6 5-3 1-6-5z" fill="#E8D64A" stroke="#2B2117"/><path d="M8 4v8M4 8h8" stroke="#F5EAC8"/></svg>',
+  ham:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="3" y="4" width="10" height="9" rx="2" fill="#D87979" stroke="#2B2117"/><circle cx="6" cy="8" r="1" fill="#F5D0C0"/><circle cx="10" cy="10" r="1" fill="#F5D0C0"/></svg>',
+  soyMilk:
+    '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path d="M4 5h8v10H4z" fill="#F5EAC8" stroke="#2B2117"/><path d="M5 2h6l1 3H4z" fill="#A8C08A" stroke="#2B2117"/><circle cx="8" cy="10" r="2" fill="#B88848"/></svg>',
 } as const
 
 export type FoodKey = keyof typeof FOOD_SVGS
@@ -42,6 +78,7 @@ export type FoodKey = keyof typeof FOOD_SVGS
 export interface FoodCatalogEntry {
   key: FoodKey
   name: string
+  aliases?: readonly string[]
   englishName: string
   category: 'ingredient' | 'drink' | 'other'
   kcal: number
@@ -50,7 +87,7 @@ export interface FoodCatalogEntry {
   expiresInDays: number
 }
 
-const entries: readonly FoodCatalogEntry[] = [
+export const foodCatalogEntries: readonly FoodCatalogEntry[] = [
   { key: 'cabbage', name: '白菜', englishName: 'Cabbage', category: 'ingredient', kcal: 25, quantity: '半颗', addedDaysAgo: 3, expiresInDays: 5 },
   { key: 'carrot', name: '胡萝卜', englishName: 'Carrot', category: 'ingredient', kcal: 41, quantity: '3根', addedDaysAgo: 1, expiresInDays: 7 },
   { key: 'tomato', name: '番茄', englishName: 'Tomato', category: 'ingredient', kcal: 18, quantity: '4个', addedDaysAgo: 2, expiresInDays: 1 },
@@ -69,10 +106,28 @@ const entries: readonly FoodCatalogEntry[] = [
   { key: 'milk', name: '牛奶', englishName: 'Milk', category: 'drink', kcal: 42, quantity: '1L', addedDaysAgo: 2, expiresInDays: 5 },
   { key: 'cheese', name: '芝士', englishName: 'Cheese', category: 'other', kcal: 402, quantity: '200g', addedDaysAgo: 5, expiresInDays: 30 },
   { key: 'butter', name: '黄油', englishName: 'Butter', category: 'other', kcal: 717, quantity: '250g', addedDaysAgo: 10, expiresInDays: 60 },
+  { key: 'yogurt', name: '酸奶', aliases: ['酸乳'], englishName: 'Yogurt', category: 'drink', kcal: 72, quantity: '1盒', addedDaysAgo: 0, expiresInDays: 10 },
+  { key: 'pork', name: '猪肉', aliases: ['五花肉', '里脊肉', '排骨'], englishName: 'Pork', category: 'ingredient', kcal: 242, quantity: '500g', addedDaysAgo: 0, expiresInDays: 3 },
+  { key: 'fish', name: '鱼', aliases: ['鲈鱼', '鳕鱼', '草鱼', '鱼肉'], englishName: 'Fish', category: 'ingredient', kcal: 120, quantity: '1条', addedDaysAgo: 0, expiresInDays: 2 },
+  { key: 'tofu', name: '豆腐', aliases: ['嫩豆腐', '老豆腐'], englishName: 'Tofu', category: 'ingredient', kcal: 76, quantity: '1盒', addedDaysAgo: 0, expiresInDays: 3 },
+  { key: 'bread', name: '面包', aliases: ['吐司', '全麦面包'], englishName: 'Bread', category: 'other', kcal: 265, quantity: '1袋', addedDaysAgo: 0, expiresInDays: 5 },
+  { key: 'rice', name: '米饭', aliases: ['大米', '米'], englishName: 'Rice', category: 'other', kcal: 116, quantity: '1份', addedDaysAgo: 0, expiresInDays: 1 },
+  { key: 'noodle', name: '面条', aliases: ['面', '挂面', '意面'], englishName: 'Noodles', category: 'other', kcal: 138, quantity: '1包', addedDaysAgo: 0, expiresInDays: 30 },
+  { key: 'dumpling', name: '饺子', aliases: ['水饺', '馄饨'], englishName: 'Dumpling', category: 'other', kcal: 220, quantity: '1袋', addedDaysAgo: 0, expiresInDays: 30 },
+  { key: 'broccoli', name: '西兰花', englishName: 'Broccoli', category: 'ingredient', kcal: 34, quantity: '1颗', addedDaysAgo: 0, expiresInDays: 5 },
+  { key: 'mushroom', name: '蘑菇', aliases: ['香菇', '口蘑', '金针菇'], englishName: 'Mushroom', category: 'ingredient', kcal: 22, quantity: '1盒', addedDaysAgo: 0, expiresInDays: 5 },
+  { key: 'pepper', name: '辣椒', aliases: ['青椒', '红椒', '彩椒'], englishName: 'Pepper', category: 'ingredient', kcal: 40, quantity: '3个', addedDaysAgo: 0, expiresInDays: 7 },
+  { key: 'lettuce', name: '生菜', aliases: ['油麦菜', '菠菜'], englishName: 'Lettuce', category: 'ingredient', kcal: 15, quantity: '1颗', addedDaysAgo: 0, expiresInDays: 4 },
+  { key: 'orange', name: '橙子', aliases: ['橘子', '柑橘'], englishName: 'Orange', category: 'ingredient', kcal: 47, quantity: '4个', addedDaysAgo: 0, expiresInDays: 10 },
+  { key: 'pear', name: '梨', aliases: ['雪梨'], englishName: 'Pear', category: 'ingredient', kcal: 57, quantity: '3个', addedDaysAgo: 0, expiresInDays: 10 },
+  { key: 'watermelon', name: '西瓜', englishName: 'Watermelon', category: 'ingredient', kcal: 30, quantity: '半个', addedDaysAgo: 0, expiresInDays: 3 },
+  { key: 'lemon', name: '柠檬', englishName: 'Lemon', category: 'ingredient', kcal: 29, quantity: '2个', addedDaysAgo: 0, expiresInDays: 14 },
+  { key: 'ham', name: '火腿', aliases: ['香肠', '培根'], englishName: 'Ham', category: 'ingredient', kcal: 145, quantity: '1包', addedDaysAgo: 0, expiresInDays: 7 },
+  { key: 'soyMilk', name: '豆浆', aliases: ['豆奶'], englishName: 'Soy Milk', category: 'drink', kcal: 31, quantity: '1瓶', addedDaysAgo: 0, expiresInDays: 5 },
 ]
 
 export const foodCatalog = Object.fromEntries(
-  entries.map((entry) => [entry.key, entry]),
+  foodCatalogEntries.map((entry) => [entry.key, entry]),
 ) as Record<FoodKey, FoodCatalogEntry>
 
 export const UNKNOWN_FOOD_SVG =

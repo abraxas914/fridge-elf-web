@@ -1,3 +1,6 @@
+import type { AssistantReply } from '../bridge/types'
+import type { PlannerState } from '../app/types'
+
 export interface DemoWorldSnapshot {
   inventory: Array<{
     name: string
@@ -7,7 +10,7 @@ export interface DemoWorldSnapshot {
   }>
   plannedMeals: Array<{
     day: string
-    meal: 'dinner'
+    meal: 'breakfast' | 'lunch' | 'dinner'
     recipeName: string
   }>
   missingItems: string[]
@@ -31,4 +34,38 @@ export interface DemoAgentInput {
   mode: 'agent' | 'recommend'
   message?: string
   snapshot: DemoWorldSnapshot
+}
+
+export type DemoAssistantIntent =
+  | 'inventory-voice'
+  | 'shopping-voice'
+
+export interface DemoAssistantInventoryItem {
+  name: string
+  quantity: string
+  storage: string
+  addedDate: string
+  expiryDate: string
+  status: string
+}
+
+export interface DemoAssistantInput {
+  intent?: DemoAssistantIntent
+  question: string
+  inventory?: readonly DemoAssistantInventoryItem[]
+  profile?: unknown
+  planner?: PlannerState
+  missingItems?: readonly string[]
+  snapshot?: DemoWorldSnapshot
+}
+
+export interface DemoAssistantReply extends AssistantReply {
+  existingRecipeIds: string[]
+  notices?: string[]
+}
+
+export interface DemoCapabilities {
+  assistant: 'managed'
+  recipeIllustration: 'managed'
+  speechRecognition: 'managed'
 }

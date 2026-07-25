@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { InventoryItem } from '../bridge/types'
-import { mapNativeInventoryItem } from './inventoryMapper'
+import { mapNativeInventory, mapNativeInventoryItem } from './inventoryMapper'
 
 const today = new Date('2026-07-24T12:00:00+08:00')
 
@@ -73,6 +73,45 @@ describe('native inventory presentation mapping', () => {
       kcal: null,
       addedDaysAgo: null,
       source: 'native',
+    })
+  })
+
+  it('merges same-day same-food batches but keeps different dates separate', () => {
+    const mapped = mapNativeInventory(
+      [
+        nativeItem({
+          id: 'egg-a',
+          name: '鸡蛋',
+          quantity: '2个',
+          addedDate: '2026-07-24',
+        }),
+        nativeItem({
+          id: 'egg-b',
+          name: '鸡蛋',
+          quantity: '3个',
+          addedDate: '2026-07-24',
+        }),
+        nativeItem({
+          id: 'egg-c',
+          name: '鸡蛋',
+          quantity: '1个',
+          addedDate: '2026-07-23',
+        }),
+      ],
+      today,
+    )
+
+    expect(mapped).toHaveLength(2)
+    expect(mapped[0]).toMatchObject({
+      quantity: '5个',
+      batchCount: 2,
+      sourceIds: ['egg-a', 'egg-b'],
+      addedDate: '2026-07-24',
+    })
+    expect(mapped[1]).toMatchObject({
+      quantity: '1个',
+      batchCount: 1,
+      addedDate: '2026-07-23',
     })
   })
 })

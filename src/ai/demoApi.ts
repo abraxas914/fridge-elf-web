@@ -8,6 +8,8 @@ const RETINBOX_HOST = 'fridgeelf.rth1.xyz'
 const VERCEL_BFF_ORIGIN = 'https://fridge-elf-app.vercel.app'
 const SESSION_STORAGE_KEY = 'fridge-elf-demo-session-v1'
 const REQUEST_TIMEOUT_MS = 50_000
+const TRANSCRIPTION_TIMEOUT_MS = 135_000
+const MAX_TRANSCRIPTION_LENGTH = 2_000
 
 interface LocationLike {
   hostname: string
@@ -140,6 +142,31 @@ function isDemoAgentResponse(value: unknown): value is DemoAgentResponse {
   )
 }
 
+function audioFilename(audio: Blob) {
+  const mimeType = audio.type
+    .split(';', 1)[0]
+    .trim()
+    .toLowerCase()
+  const extension = new Map([
+    ['audio/webm', 'webm'],
+    ['audio/ogg', 'ogg'],
+    ['audio/mp4', 'mp4'],
+    ['audio/wav', 'wav'],
+    ['audio/mpeg', 'mp3'],
+  ]).get(mimeType) ?? 'webm'
+  return `voice.${extension}`
+}
+
+function transcriptionText(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+  const raw = (value as { text?: unknown }).text
+  if (typeof raw !== 'string') return null
+  const text = raw.trim()
+  return text ? text.slice(0, MAX_TRANSCRIPTION_LENGTH) : null
+}
+
 export async function requestDemoAgent(
   input: DemoAgentInput,
   options: DemoRequestOptions = {},
@@ -224,5 +251,47 @@ export async function requestDemoIllustration(
   } catch (error) {
     if (error instanceof DemoApiError) throw error
     throw new DemoApiError('IMAGE_UNAVAILABLE')
+  }
+}
+
+export async function requestDemoTranscription(
+  audio: Blob,
+  options: DemoRequestOptions = {},
+) {
+  const fetcher = options.fetcher ?? fetch
+  const location = options.location ?? browserLocation()
+  const token = await getDemoSession(options)
+  const body = new FormData()
+  body.append('audio', audio, audioFilename(audio))
+
+  try {
+    const response = await fetcher(
+      demoApiUrl('/api/demo/transcribe', location),
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          authorization: `Bearer ${token}`,
+        },
+        body,
+        signal: AbortSignal.timeout(TRANSCRIPTION_TIMEOUT_MS),
+      },
+    )
+    if (!response.ok) {
+      throw new DemoApiError(
+        response.status === 429
+          ? 'DEMO_RATE_LIMITED'
+          : 'TRANSCRIPTION_UNAVAILABLE',
+        response.status,
+      )
+    }
+    const text = transcriptionText(await response.json())
+    if (!text) {
+      throw new DemoApiError('TRANSCRIPTION_UNAVAILABLE')
+    }
+    return text
+  } catch (error) {
+    if (error instanceof DemoApiError) throw error
+    throw new DemoApiError('TRANSCRIPTION_UNAVAILABLE')
   }
 }
