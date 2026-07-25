@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { inlineViteHtml } from './retinbox-html.mjs'
+import { readFile } from 'node:fs/promises'
 
 test('inlines Vite JavaScript and CSS while removing module preloads', async () => {
   const html = `<!doctype html>
@@ -27,4 +28,18 @@ test('inlines Vite JavaScript and CSS while removing module preloads', async () 
     result,
     /<script type="module">document\.body\.dataset\.ready = "yes";<\/script>/,
   )
+})
+
+test('allows only the shared Vercel BFF as an external connection', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
+  const csp = html.match(
+    /<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]+)"/,
+  )?.[1]
+
+  assert.ok(csp)
+  assert.match(
+    csp,
+    /connect-src 'self' https:\/\/fridge-elf-app\.vercel\.app/,
+  )
+  assert.doesNotMatch(csp, /113\.45\.39\.247|api\.iotwq\.top/)
 })

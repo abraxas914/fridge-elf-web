@@ -4,6 +4,12 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
+    "api/demo/agent.ts": {
+      "maxDuration": 60
+    },
+    "api/demo/recommend.ts": {
+      "maxDuration": 60
+    },
     "api/illustrate.ts": {
       "maxDuration": 300
     }
