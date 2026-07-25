@@ -19,7 +19,6 @@ import {
 import {
   createBrowserDisplay,
   createBrowserMock,
-  createBrowserSpeech,
   type AppRuntime,
 } from '../bridge/browserMock'
 import type { AssistantJob } from '../features/assistant/types'
@@ -32,6 +31,10 @@ import {
   createManagedIllustration,
   type DemoIllustrationRequester,
 } from './managedIllustration'
+import {
+  createManagedSpeech,
+  type DemoSpeechRequester,
+} from './managedSpeech'
 
 export type DemoAgentRequester = (
   input: DemoAgentInput,
@@ -40,6 +43,7 @@ export type DemoAgentRequester = (
 export interface DemoRuntimeOptions {
   agentRequester?: DemoAgentRequester
   illustrationRequester?: DemoIllustrationRequester
+  speechRequester?: DemoSpeechRequester
 }
 
 export interface DemoRuntime extends AppRuntime {
@@ -297,7 +301,7 @@ export function createDemoRuntime(
       buildSnapshot,
     ),
     recipeIllustration,
-    speech: createBrowserSpeech(),
+    speech: createManagedSpeech(options.speechRequester),
     display: createBrowserDisplay(stateStorage),
     stateStorage,
     mode: 'browser-mock',

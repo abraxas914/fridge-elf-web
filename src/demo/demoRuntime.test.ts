@@ -62,6 +62,82 @@ describe('managed Web Demo runtime', () => {
       status: 'verified',
       providerLabel: 'Fridge Elf Demo Gateway',
     })
+    expect(summaries['speech-recognition']).toMatchObject({
+      status: 'verified',
+      providerLabel: 'Fridge Elf Demo Gateway',
+      modelId: 'managed-speech',
+    })
+  })
+
+  it('uses an isolated managed transcription requester per runtime', async () => {
+    const track = { stop: vi.fn() }
+    const instances: Array<{
+      stop(): void
+      state: RecordingState
+    }> = []
+    class RuntimeMediaRecorder {
+      static isTypeSupported(type: string) {
+        return type === 'audio/webm;codecs=opus'
+      }
+
+      readonly mimeType = 'audio/webm;codecs=opus'
+      state: RecordingState = 'inactive'
+      ondataavailable: ((event: BlobEvent) => void) | null = null
+      onstop: (() => void) | null = null
+      onerror: (() => void) | null = null
+
+      constructor(
+        _stream: MediaStream,
+        _options?: MediaRecorderOptions,
+      ) {
+        instances.push(this)
+      }
+
+      start() {
+        this.state = 'recording'
+      }
+
+      stop() {
+        this.state = 'inactive'
+        queueMicrotask(() => {
+          this.ondataavailable?.({
+            data: new Blob(['voice']),
+          } as BlobEvent)
+          this.onstop?.()
+        })
+      }
+    }
+    vi.stubGlobal('navigator', {
+      mediaDevices: {
+        getUserMedia: vi.fn().mockResolvedValue({
+          getTracks: () => [track],
+        }),
+      },
+    })
+    vi.stubGlobal('MediaRecorder', RuntimeMediaRecorder)
+    try {
+      const firstRequester = vi.fn().mockResolvedValue('第一段录音')
+      const secondRequester = vi.fn().mockResolvedValue('第二段录音')
+      const first = createDemoRuntime({
+        speechRequester: firstRequester,
+      })
+      const second = createDemoRuntime({
+        speechRequester: secondRequester,
+      })
+
+      const firstSession = first.speech.start()
+      const secondSession = second.speech.start()
+      await vi.waitFor(() => expect(instances).toHaveLength(2))
+      firstSession.stop()
+      secondSession.stop()
+
+      await expect(firstSession.result).resolves.toBe('第一段录音')
+      await expect(secondSession.result).resolves.toBe('第二段录音')
+      expect(firstRequester).toHaveBeenCalledOnce()
+      expect(secondRequester).toHaveBeenCalledOnce()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('builds the managed Agent request from the released assistant context', async () => {
