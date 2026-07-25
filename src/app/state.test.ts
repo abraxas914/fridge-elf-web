@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import type { ClockPort } from './ports'
 import {
   appReducer,
+  createInitialAppState,
   createDisplaySleepController,
   createTypewriterController,
   deriveMissingIngredients,
   initialAppState,
   type AppAction,
 } from './state'
+import { createMemoryStorage } from '../demo/memoryStorage'
 import { TAB_ORDER, type AppState } from './types'
 
 class FakeClock implements ClockPort {
@@ -45,6 +47,24 @@ class FakeClock implements ClockPort {
 }
 
 describe('Life Helper state', () => {
+  it('loads planner state from the injected demo store', () => {
+    const storage = createMemoryStorage()
+    storage.setItem(
+      'fridge-planner-v2',
+      JSON.stringify({
+        mon: {
+          breakfast: null,
+          lunch: null,
+          dinner: 'recipe-tomato-egg-bowl',
+        },
+      }),
+    )
+
+    expect(createInitialAppState(storage).planner.mon.dinner).toBe(
+      'recipe-tomato-egg-bowl',
+    )
+  })
+
   it('enters the app on the fridge tab and keeps the HTML tab order', () => {
     expect(TAB_ORDER).toEqual(['shop', 'recipe', 'fridge', 'note', 'me'])
     const state = appReducer(initialAppState, { type: 'enter-app' })

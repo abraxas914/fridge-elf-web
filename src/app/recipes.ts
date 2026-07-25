@@ -23,10 +23,12 @@ export const defaultFavoriteRecipes = (): SavedRecipe[] =>
     steps: [],
   }))
 
-export function loadFavoriteRecipes(): SavedRecipe[] {
+export function loadFavoriteRecipes(
+  storage: Pick<Storage, 'getItem'> = localStorage,
+): SavedRecipe[] {
   try {
     const value: unknown = JSON.parse(
-      localStorage.getItem('fridge-favorite-recipes-v1') ?? 'null',
+      storage.getItem('fridge-favorite-recipes-v1') ?? 'null',
     )
     if (Array.isArray(value)) return value as SavedRecipe[]
   } catch {

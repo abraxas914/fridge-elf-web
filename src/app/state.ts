@@ -42,11 +42,13 @@ export const emptyPlanner = (): PlannerState =>
     PLANNER_DAY_KEYS.map((day) => [day, emptyPlannerDay()]),
   ) as PlannerState
 
-function loadPlanner(): PlannerState {
+export function loadPlanner(
+  storage: Pick<Storage, 'getItem'> = localStorage,
+): PlannerState {
   try {
     const saved: unknown = JSON.parse(
-      localStorage.getItem('fridge-planner-v2') ??
-        localStorage.getItem('fridge-planner-v1') ??
+      storage.getItem('fridge-planner-v2') ??
+        storage.getItem('fridge-planner-v1') ??
         'null',
     )
     if (saved && typeof saved === 'object') {
@@ -72,18 +74,24 @@ function loadPlanner(): PlannerState {
   return emptyPlanner()
 }
 
-export const initialAppState: AppState = {
-  scene: 'kitchen',
-  currentTab: 'fridge',
-  modal: null,
-  toast: null,
-  muted: false,
-  reducedMotion: false,
-  displayMode: 'home',
-  noteText: '',
-  visibleNoteText: '',
-  planner: loadPlanner(),
+export function createInitialAppState(
+  storage: Pick<Storage, 'getItem'> = localStorage,
+): AppState {
+  return {
+    scene: 'kitchen',
+    currentTab: 'fridge',
+    modal: null,
+    toast: null,
+    muted: false,
+    reducedMotion: false,
+    displayMode: 'home',
+    noteText: '',
+    visibleNoteText: '',
+    planner: loadPlanner(storage),
+  }
 }
+
+export const initialAppState: AppState = createInitialAppState()
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { CredentialPort } from '../../app/ports'
 import type { CredentialSummaries } from '../../features/credentials/types'
 import { ProfileScene } from './ProfileScene'
+import { createMemoryStorage } from '../../demo/memoryStorage'
 
 function credentials(): CredentialPort {
   return {
@@ -28,6 +29,17 @@ function credentials(): CredentialPort {
 }
 
 describe('ProfileScene', () => {
+  it('persists preferences into the injected demo store', () => {
+    const storage = createMemoryStorage()
+    render(<ProfileScene storage={storage} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /增肌/ }))
+
+    expect(
+      JSON.parse(storage.getItem('fridge-profile-v1') ?? '{}'),
+    ).toMatchObject({ fitness: 'gain' })
+  })
+
   it('shows one concise credential entry before living preferences', async () => {
     const { container } = render(
       <ProfileScene credentials={credentials()} onToast={vi.fn()} />,

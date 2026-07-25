@@ -5,6 +5,7 @@ import type {
   InventoryPort,
   RecipeIllustrationPort,
   SpeechPort,
+  StateStoragePort,
 } from '../app/ports'
 import type { AssistantJob } from '../features/assistant/types'
 import type {
@@ -17,6 +18,7 @@ import type {
 } from '../features/recipeIllustration/types'
 import { buildRecipeIllustrationPlan } from '../features/recipeIllustration/recipePlan'
 import { GOLDEN_FOODS } from '../fixtures/goldenFixture'
+import { createMemoryStorage } from '../demo/memoryStorage'
 import { createNativeRuntime } from './nativeBridge'
 import type {
   AddInventoryItem,
@@ -167,6 +169,7 @@ export interface AppRuntime {
   recipeIllustration: RecipeIllustrationPort
   speech: SpeechPort
   display: DisplayPort
+  stateStorage: StateStoragePort
   mode: RuntimeMode
 }
 
@@ -200,7 +203,7 @@ export function createBrowserAssistantMock(): AssistantPort {
   }
 }
 
-function createBrowserSpeech(): SpeechPort {
+export function createBrowserSpeech(): SpeechPort {
   return {
     start() {
       return {
@@ -250,7 +253,7 @@ export function createBrowserRecipeIllustrationMock():
   }
 }
 
-function createBrowserDisplay(
+export function createBrowserDisplay(
   storage: Pick<Storage, 'setItem'> | undefined,
 ): DisplayPort {
   return {
@@ -263,6 +266,10 @@ function createBrowserDisplay(
 export function selectInventoryRuntime(
   hostWindow: Window = window,
 ): AppRuntime {
+  const stateStorage =
+    typeof localStorage === 'undefined'
+      ? createMemoryStorage()
+      : localStorage
   if (hostWindow.NativeBridge) {
     try {
       const runtime = createNativeRuntime(
@@ -271,21 +278,21 @@ export function selectInventoryRuntime(
       )
       return {
         ...runtime,
+        stateStorage,
         mode: 'native',
       }
     } catch {
       // Fall through to the deterministic browser implementation.
     }
   }
-  const storage =
-    typeof localStorage === 'undefined' ? undefined : localStorage
   return {
-    inventory: createBrowserMock(storage),
+    inventory: createBrowserMock(stateStorage),
     credentials: createBrowserCredentialMock(),
     assistant: createBrowserAssistantMock(),
     recipeIllustration: createBrowserRecipeIllustrationMock(),
     speech: createBrowserSpeech(),
-    display: createBrowserDisplay(storage),
+    display: createBrowserDisplay(stateStorage),
+    stateStorage,
     mode: 'browser-mock',
   }
 }

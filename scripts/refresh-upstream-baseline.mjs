@@ -24,6 +24,7 @@ const files = {}
 for (const root of lock.productRoots) {
   for (const absolute of await filesUnder(resolve(root))) {
     const path = relative(process.cwd(), absolute)
+    if (/\.test\.[cm]?[jt]sx?$/.test(path)) continue
     if (allowed.has(path)) continue
     const content = await readFile(absolute)
     files[path] = createHash('sha256').update(content).digest('hex')

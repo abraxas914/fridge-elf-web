@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import type { CredentialPort } from '../../app/ports'
+import type {
+  CredentialPort,
+  StateStoragePort,
+} from '../../app/ports'
 import { createBrowserCredentialMock } from '../../bridge/browserMock'
 import { PixelIcon, type PixelIconName } from '../../catalog/pixelIcons'
 import {
@@ -31,6 +34,7 @@ interface ProfileSceneProps {
   credentials?: CredentialPort
   openCredentialCapability?: AiCapability | null
   onToast?: (message: string) => void
+  storage?: StateStoragePort
 }
 
 const defaults: ProfileState = {
@@ -62,11 +66,11 @@ const EMPTY_CREDENTIAL_SUMMARIES: CredentialSummaries = {
   },
 }
 
-function loadProfile() {
+function loadProfile(storage: Pick<Storage, 'getItem'> = localStorage) {
   try {
     return {
       ...defaults,
-      ...JSON.parse(localStorage.getItem('fridge-profile-v1') ?? '{}'),
+      ...JSON.parse(storage.getItem('fridge-profile-v1') ?? '{}'),
     } as ProfileState
   } catch {
     return defaults
@@ -105,11 +109,12 @@ export function ProfileScene({
   credentials,
   openCredentialCapability = null,
   onToast = () => undefined,
+  storage = localStorage,
 }: ProfileSceneProps = {}) {
   const credentialsRef = useRef(
     credentials ?? createBrowserCredentialMock(),
   )
-  const [profile, setProfile] = useState(loadProfile)
+  const [profile, setProfile] = useState(() => loadProfile(storage))
   const [credentialSummaries, setCredentialSummaries] =
     useState<CredentialSummaries>(EMPTY_CREDENTIAL_SUMMARIES)
   const [showCredentialCenter, setShowCredentialCenter] = useState(false)
@@ -119,8 +124,8 @@ export function ProfileScene({
   ) => setProfile((current) => ({ ...current, [key]: value }))
 
   useEffect(() => {
-    localStorage.setItem('fridge-profile-v1', JSON.stringify(profile))
-  }, [profile])
+    storage.setItem('fridge-profile-v1', JSON.stringify(profile))
+  }, [profile, storage])
 
   useEffect(() => {
     if (!active) return

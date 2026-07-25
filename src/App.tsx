@@ -9,8 +9,8 @@ import {
 import { createBrowserAudio } from './app/browserAudio'
 import {
   appReducer,
+  createInitialAppState,
   deriveMissingIngredients,
-  initialAppState,
 } from './app/state'
 import { mapNativeInventory } from './app/inventoryMapper'
 import {
@@ -99,12 +99,19 @@ export function App({
     useState<AiCapability | null>(null)
   const [shoppingItems, setShoppingItems] = useState(initialShopItems)
   const [favoriteRecipes, setFavoriteRecipes] =
-    useState<SavedRecipe[]>(loadFavoriteRecipes)
-  const [state, dispatch] = useReducer(appReducer, {
-    ...initialAppState,
-    reducedMotion:
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
-  })
+    useState<SavedRecipe[]>(() =>
+      loadFavoriteRecipes(runtime.stateStorage),
+    )
+  const [state, dispatch] = useReducer(
+    appReducer,
+    runtime.stateStorage,
+    (storage) => ({
+      ...createInitialAppState(storage),
+      reducedMotion:
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ??
+        false,
+    }),
+  )
 
   useEffect(() => {
     if (!state.toast) return
@@ -120,15 +127,18 @@ export function App({
   }, [audio, state.muted])
 
   useEffect(() => {
-    localStorage.setItem(
+    runtime.stateStorage.setItem(
       'fridge-favorite-recipes-v1',
       JSON.stringify(favoriteRecipes),
     )
-  }, [favoriteRecipes])
+  }, [favoriteRecipes, runtime.stateStorage])
 
   useEffect(() => {
-    localStorage.setItem('fridge-planner-v2', JSON.stringify(state.planner))
-  }, [state.planner])
+    runtime.stateStorage.setItem(
+      'fridge-planner-v2',
+      JSON.stringify(state.planner),
+    )
+  }, [runtime.stateStorage, state.planner])
 
   useEffect(() => {
     let active = true
@@ -671,6 +681,7 @@ export function App({
         ) : (
           <ProfileScene
             credentials={runtime.credentials}
+            storage={runtime.stateStorage}
             openCredentialCapability={credentialTarget}
             onToast={(message) =>
               dispatch({ type: 'show-toast', message })

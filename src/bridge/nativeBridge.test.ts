@@ -131,6 +131,8 @@ describe('typed NativeBridge boundary', () => {
       connected: true,
       detail: 'BROWSER MOCK',
     })
+    runtime.stateStorage.setItem('demo-check', 'ready')
+    expect(runtime.stateStorage.getItem('demo-check')).toBe('ready')
   })
 
   it('requires bridge version 1 and parses all three JSON calls', async () => {

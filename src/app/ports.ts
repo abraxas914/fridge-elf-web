@@ -76,3 +76,8 @@ export interface SpeechPort {
 export interface DisplayPort {
   setState(state: DisplayState): Promise<void>
 }
+
+export type StateStoragePort = Pick<
+  Storage,
+  'clear' | 'getItem' | 'removeItem' | 'setItem'
+>
