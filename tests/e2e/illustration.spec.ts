@@ -1,12 +1,24 @@
 import { expect, test } from '@playwright/test'
 import { enterApp, prepareApp, selectTab } from './helpers/appDriver'
 
-test('signed demo session generates an illustration without exposing a key', async ({
+test('anonymous demo session generates an illustration without exposing a key', async ({
   page,
 }) => {
   const requests: Array<Record<string, unknown>> = []
+  const authorization: Array<string | undefined> = []
+  await page.route('**/api/demo/session', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'e2e-anonymous-session',
+        expiresAt: '2099-01-01T00:00:00.000Z',
+      }),
+    })
+  })
   await page.route('**/api/illustrate', async (route) => {
     requests.push(route.request().postDataJSON())
+    authorization.push(route.request().headers().authorization)
     await route.fulfill({
       status: 200,
       contentType: 'image/png',
@@ -18,8 +30,7 @@ test('signed demo session generates an illustration without exposing a key', asy
     })
   })
 
-  await prepareApp(page, '/demo?demo=e2e-signed-token')
-  await expect(page).not.toHaveURL(/demo=/)
+  await prepareApp(page, '/demo')
   await enterApp(page)
   await selectTab(page, '食谱')
   await page.getByRole('button', { name: /菜谱插画/ }).click()
@@ -35,4 +46,5 @@ test('signed demo session generates an illustration without exposing a key', asy
   })
   expect(requests[0]).not.toHaveProperty('prompt')
   expect(JSON.stringify(requests[0])).not.toContain('sk-')
+  expect(authorization).toEqual(['Bearer e2e-anonymous-session'])
 })

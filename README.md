@@ -52,6 +52,7 @@
 | 语音与触摸 | 手上拿着东西时也能快速录入或取出 |
 | 菜谱与采购 | 从现有库存走到一餐，再回到采购 |
 | 家庭信息 | 在冰箱旁看见便签、三餐、日历与提醒 |
+| 只读 Agent | 根据当前模拟库存回答问题、给出食谱建议，不改动 Demo 世界 |
 | 食谱插画 | 将中文食谱转换为四种信息结构一致的步骤图 |
 
 ## 一个小终端，慢慢退到环境里
@@ -81,6 +82,7 @@
 
 - `/`：面向评委、合作方和体验者的 Landing Page；
 - `/demo`：可直接操作的 Smart Tag 浏览器 Demo；
+- 基于当前 mock 世界快照的无状态 Recipe Agent 与在线推荐；
 - Android 稳定版 Release 信息与 APK 下载入口；
 - 四种菜谱插画风格共用的 `RecipePlan` 与 Image2 服务端调用；
 - Vercel 动态能力与 Retinbox 静态镜像的双端发布。
@@ -131,26 +133,37 @@ npm run capture:readme
 |---|---|---|
 | `GET /api/releases/latest` | 读取符合约定的 Android 稳定 Release | Vercel Function |
 | `GET /api/download/android` | 跳转到与 Release Tag 对应的 APK | Vercel Function |
+| `POST /api/demo/session` | 签发两小时匿名 Demo 会话 | Vercel Function |
+| `POST /api/demo/agent` | 只读 Agent 对话 | Vercel Function |
+| `POST /api/demo/recommend` | 基于当前 mock 世界的在线推荐 | Vercel Function |
 | `POST /api/illustrate` | 生成单页 `1200×1440` 菜谱插画 | Vercel Function |
 
 本地真实 API 联调使用未提交的 `.env.local`：
 
 ```dotenv
-IMAGE_API_ENDPOINT=https://api.iotwq.top/v1/images/generations
-IMAGE_API_KEY=...
-DEMO_TOKEN_SECRET=...
+DEMO_SESSION_SECRET=...
+HEADLESS_GATEWAY_BASE_URL=...
+HEADLESS_GATEWAY_API_KEY=...
+HEADLESS_GATEWAY_DEFAULT_MODEL=...
+HEADLESS_IMAGE_GATEWAY_BASE_URL=...
+HEADLESS_IMAGE_GATEWAY_API_KEY=...
+HEADLESS_IMAGE_GATEWAY_MODEL=...
 ```
 
 安全边界：
 
-- Image2 Key 只能进入本地 `.env.local` 或 Vercel Environment Variables；
+- 所有上游地址与密钥只能进入本地 `.env.local` 或 Vercel Environment Variables；
 - 密钥不得使用 `VITE_*` 前缀，也不得进入前端 bundle；
+- 浏览器会话是无账户、两小时有效的 HMAC Token，只保存在 `sessionStorage`；
+- Agent 只接收裁剪后的 mock 世界快照；响应字段会在服务端再次白名单过滤；
+- Agent、推荐和图片生成失败时，界面回退到内置 Fixture，不影响 Demo 状态机；
 - 浏览器只提交 `{ style, recipeText, page }`，不能提交 raw prompt；
-- 服务端重新编译 `RecipePlan`，每页最多 6 步，固定使用 `gpt-image-2`；
-- 生成结果不写入持久存储；
+- 服务端重新编译 `RecipePlan`，每页最多 6 步；模型由服务端配置；
+- 库存、规划、对话和生成结果均不写入持久存储；刷新或“重新开始 Demo”会恢复初始世界；
+- 当前文本网关上游为 HTTP，比赛 Demo 暂时接受 Vercel 到网关链路无 TLS 的风险；浏览器到 Vercel 仍为 HTTPS；
 - Android 正式应用采用 BYOK，密钥持久化由 Android 工程在本地安全存储中处理，本 Web Demo 不向访客索取密钥。
 
-> Retinbox 是独立的静态镜像，可以运行 Landing Page 与浏览器 Demo，但不承载 Vercel Functions。需要 Release 查询、APK 跳转或 Image2 生成时，请使用 Vercel 入口。
+> Retinbox 是独立静态镜像，不保存任何密钥。其 `/demo` 会跨域调用公开的 Vercel BFF，因此两个部署地址共享同一套 Agent、推荐与 Image2 能力。
 
 ## Android Release
 
