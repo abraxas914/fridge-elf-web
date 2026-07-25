@@ -26,15 +26,19 @@ async function loadRelease(
   environment: ReleaseEnvironment,
   fetcher: Fetcher,
 ) {
-  const headers: Record<string, string> = {
+  const publicHeaders: Record<string, string> = {
     accept: 'application/vnd.github+json',
     'user-agent': 'fridge-elf-release-gateway',
     'x-github-api-version': '2022-11-28',
   }
+  const headers = { ...publicHeaders }
   if (environment.GITHUB_RELEASE_TOKEN) {
     headers.authorization = `Bearer ${environment.GITHUB_RELEASE_TOKEN}`
   }
-  const response = await fetcher(RELEASE_URL, { headers })
+  let response = await fetcher(RELEASE_URL, { headers })
+  if (response.status === 404 && environment.GITHUB_RELEASE_TOKEN) {
+    response = await fetcher(RELEASE_URL, { headers: publicHeaders })
+  }
   if (response.status === 404) return null
   if (!response.ok) throw new Error(`GitHub release API returned ${response.status}`)
   try {
