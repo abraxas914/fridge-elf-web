@@ -17,7 +17,6 @@ interface AppHeaderProps {
   runtimeLabel?: string
   onToggleMute: () => void
   onOpenPeek: () => void
-  onRestartDemo?: () => void
 }
 
 export function AppHeader({
@@ -27,7 +26,6 @@ export function AppHeader({
   runtimeLabel,
   onToggleMute,
   onOpenPeek,
-  onRestartDemo,
 }: AppHeaderProps) {
   const compact = currentTab !== 'fridge'
   return (
@@ -90,15 +88,6 @@ export function AppHeader({
           </div>
           {runtimeLabel ? (
             <div className="runtime-label">{runtimeLabel}</div>
-          ) : null}
-          {onRestartDemo ? (
-            <button
-              className="restart-demo-btn"
-              type="button"
-              onClick={onRestartDemo}
-            >
-              重新开始 Demo
-            </button>
           ) : null}
         </div>
       </div>

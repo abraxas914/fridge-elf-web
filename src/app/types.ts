@@ -4,12 +4,13 @@ export const TAB_ORDER = ['shop', 'recipe', 'fridge', 'note', 'me'] as const
 export type AppTab = (typeof TAB_ORDER)[number]
 
 export const DISPLAY_MODES = [
+  'home',
+  'note',
+  'inventory',
   'sleep',
   'awake',
-  'voice',
   'meals',
   'calendar',
-  'weather',
 ] as const
 export type DisplayMode = (typeof DISPLAY_MODES)[number]
 
@@ -24,7 +25,10 @@ export const PLANNER_DAY_KEYS = [
 ] as const
 export type PlannerDayKey = (typeof PLANNER_DAY_KEYS)[number]
 
-export type PlannerState = Record<PlannerDayKey, string | null>
+export const PLANNER_MEAL_KEYS = ['breakfast', 'lunch', 'dinner'] as const
+export type PlannerMealKey = (typeof PLANNER_MEAL_KEYS)[number]
+export type PlannerDayState = Record<PlannerMealKey, string | null>
+export type PlannerState = Record<PlannerDayKey, PlannerDayState>
 
 export interface AppModal {
   kind: string
@@ -46,16 +50,24 @@ export interface AppState {
 
 export interface PresentedFood {
   id: string
+  sourceIds: readonly string[]
+  batches: readonly {
+    id: string
+    quantity: string
+    expiryDate: string
+  }[]
   key: FoodKey | 'unknown'
   name: string
   englishName: string
   quantity: string
   storage: string
   expiryDate: string
+  addedDate: string
   expiresInDays: number | null
   category: 'ingredient' | 'drink' | 'other' | 'unknown'
   kcal: number | null
   addedDaysAgo: number | null
+  batchCount: number
   status: string
   source: 'fixture' | 'native'
 }

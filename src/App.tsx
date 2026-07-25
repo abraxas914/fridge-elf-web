@@ -6,107 +6,106 @@ import {
   useRef,
   useState,
 } from 'react'
+import { createBrowserAudio } from './app/browserAudio'
 import {
   appReducer,
   deriveMissingIngredients,
   initialAppState,
 } from './app/state'
-import { createBrowserAudio } from './app/browserAudio'
 import { mapNativeInventory } from './app/inventoryMapper'
-import type { InventoryPort } from './app/ports'
+import {
+  loadFavoriteRecipes,
+  type SavedRecipe,
+} from './app/recipes'
+import type { AppTab, PresentedFood } from './app/types'
+import {
+  selectInventoryRuntime,
+  type AppRuntime,
+} from './bridge/browserMock'
 import type {
-  AppTab,
-  PresentedFood,
-} from './app/types'
-import { buildDemoWorldSnapshot } from './ai/demoWorld'
-import type {
-  DemoAgentInput,
-  DemoAgentResponse,
-} from './ai/types'
-import type { AddInventoryItem } from './bridge/types'
+  AddInventoryItem,
+  AssistantRecipe,
+  AssistantReply,
+  AssistantShoppingItem,
+  MqttStatus,
+} from './bridge/types'
 import { AppShell } from './components/AppShell'
-import { RECIPES } from './fixtures/goldenFixture'
-import { DEFAULT_ILLUSTRATION_RECIPE } from './illustration/demoRecipe'
+import './components/EntryComposer.css'
 import { KitchenScene } from './scenes/KitchenScene'
+import { DisplayScene } from './scenes/display/DisplayScene'
 import { AddFoodModal } from './scenes/fridge/AddFoodModal'
 import { FoodDetailModal } from './scenes/fridge/FoodDetailModal'
 import { FridgePreviewModal } from './scenes/fridge/FridgePreviewModal'
 import { FridgeScene } from './scenes/fridge/FridgeScene'
 import { GOLDEN_PRESENTED_FOODS } from './scenes/fridge/foodPresentation'
-import { DeviceDisplayScene } from './scenes/note/DeviceDisplayScene'
-import { ProfileScene } from './scenes/profile/ProfileScene'
 import { MealPlannerModal } from './scenes/recipe/MealPlannerModal'
+import { FavoriteRecipesModal } from './scenes/recipe/FavoriteRecipesModal'
 import {
+  PotTransition,
   RecipeDetailModal,
 } from './scenes/recipe/RecipeDetailModal'
-import { DemoAgentPanel } from './scenes/recipe/DemoAgentPanel'
 import {
+  RecipeMini,
   RecipeScene,
   type Recipe,
 } from './scenes/recipe/RecipeScene'
-import { IllustrationModal } from './scenes/recipe/IllustrationModal'
-import { ShoppingScene } from './scenes/shop/ShoppingScene'
+import { AssistantAnswer } from './scenes/recipe/AssistantAnswer'
+import { ProfileScene } from './scenes/profile/ProfileScene'
 import {
-  selectInventoryRuntime,
-  type RuntimeMode,
-} from './bridge/browserMock'
-import type { InventoryItem, MqttStatus } from './bridge/types'
+  ShoppingScene,
+  createShopItem,
+  initialShopItems,
+} from './scenes/shop/ShoppingScene'
+import type { AiCapability } from './features/credentials/types'
 
-export interface AppInventoryRuntime {
-  inventory: InventoryPort
-  mode: RuntimeMode
+function localDateString(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-')
 }
 
-function presentInventory(
-  items: readonly InventoryItem[],
-  mode: RuntimeMode,
-) {
-  if (mode === 'native') return mapNativeInventory(items, new Date())
-  const goldenById = new Map(
-    GOLDEN_PRESENTED_FOODS.map((food) => [food.id, food]),
-  )
-  return items.map(
-    (item) =>
-      goldenById.get(item.id) ??
-      mapNativeInventory([item], new Date())[0],
-  )
+function dateAfter(days: number) {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  return localDateString(date)
 }
+
+export type AppInventoryRuntime = AppRuntime
 
 export function App({
-  inventoryRuntime: providedInventoryRuntime,
-  demoAgentRequester,
-  onRestartDemo,
+  inventoryRuntime: providedRuntime,
 }: {
-  inventoryRuntime?: AppInventoryRuntime
-  demoAgentRequester?: (
-    input: DemoAgentInput,
-  ) => Promise<DemoAgentResponse>
-  onRestartDemo?: () => void
+  inventoryRuntime?: AppRuntime
 } = {}) {
   const tabHistory = useRef<AppTab[]>([])
   const audioRef = useRef<ReturnType<typeof createBrowserAudio> | null>(null)
   if (!audioRef.current) audioRef.current = createBrowserAudio()
   const audio = audioRef.current
-  const [inventoryRuntime] = useState<AppInventoryRuntime>(
-    () => providedInventoryRuntime ?? selectInventoryRuntime(),
+  const [runtime] = useState<AppRuntime>(
+    () => providedRuntime ?? selectInventoryRuntime(),
   )
-  const [inventoryItems, setInventoryItems] = useState<
-    readonly PresentedFood[]
-  >(
-    inventoryRuntime.mode === 'browser-mock'
-      ? GOLDEN_PRESENTED_FOODS
-      : [],
+  const inventoryPort = runtime.inventory
+  const [inventoryItems, setInventoryItems] = useState<readonly PresentedFood[]>(
+    () => runtime.mode === 'browser-mock' ? GOLDEN_PRESENTED_FOODS : [],
   )
   const [mqttStatus, setMqttStatus] = useState<MqttStatus>(
-    inventoryRuntime.mode === 'browser-mock'
+    runtime.mode === 'browser-mock'
       ? { connected: true, detail: 'BROWSER MOCK' }
       : { connected: false, detail: '连接中' },
   )
+  const [credentialTarget, setCredentialTarget] =
+    useState<AiCapability | null>(null)
+  const [shoppingItems, setShoppingItems] = useState(initialShopItems)
+  const [favoriteRecipes, setFavoriteRecipes] =
+    useState<SavedRecipe[]>(loadFavoriteRecipes)
   const [state, dispatch] = useReducer(appReducer, {
     ...initialAppState,
     reducedMotion:
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
   })
+
   useEffect(() => {
     if (!state.toast) return
     const timer = window.setTimeout(
@@ -121,70 +120,227 @@ export function App({
   }, [audio, state.muted])
 
   useEffect(() => {
+    localStorage.setItem(
+      'fridge-favorite-recipes-v1',
+      JSON.stringify(favoriteRecipes),
+    )
+  }, [favoriteRecipes])
+
+  useEffect(() => {
+    localStorage.setItem('fridge-planner-v2', JSON.stringify(state.planner))
+  }, [state.planner])
+
+  useEffect(() => {
     let active = true
-    const unsubscribe = inventoryRuntime.inventory.subscribe((event) => {
-      if (event.type === 'mqtt-status') {
+    const updateInventory = (
+      items: Parameters<typeof mapNativeInventory>[0],
+    ) => {
+      if (active) setInventoryItems(mapNativeInventory(items, new Date()))
+    }
+    const unsubscribe = inventoryPort.subscribe((event) => {
+      if (event.type === 'inventory-updated') {
+        updateInventory(event.payload.items)
+      } else if (event.type === 'mqtt-status' && active) {
         setMqttStatus(event.payload)
-      } else {
-        setInventoryItems(
-          presentInventory(event.payload.items, inventoryRuntime.mode),
-        )
       }
     })
 
-    void inventoryRuntime.inventory
-      .getItems()
-      .then((items) => {
-        if (active) {
-          setInventoryItems(presentInventory(items, inventoryRuntime.mode))
-        }
-      })
-      .catch(() => {
-        if (!active) return
-        setInventoryItems(GOLDEN_PRESENTED_FOODS)
-        dispatch({
-          type: 'show-toast',
-          message: '库存读取失败 · 已保留 LOCAL PREVIEW',
-        })
-      })
-    void inventoryRuntime.inventory
-      .getMqttStatus()
-      .then((status) => {
-        if (active) setMqttStatus(status)
-      })
-      .catch(() => {
-        if (active) {
-          setMqttStatus({ connected: false, detail: '连接状态不可用' })
-        }
-      })
+    void inventoryPort.getItems().then(updateInventory).catch(() => {
+      if (active) {
+        dispatch({ type: 'show-toast', message: '库存读取失败' })
+      }
+    })
+    void inventoryPort.getMqttStatus().then((status) => {
+      if (active) setMqttStatus(status)
+    })
 
     return () => {
       active = false
       unsubscribe()
     }
-  }, [inventoryRuntime])
+  }, [inventoryPort])
 
   const addInventoryItem = useCallback(
     async (input: AddInventoryItem) => {
-      const item = await inventoryRuntime.inventory.addItem(input)
-      setInventoryItems((current) => {
-        const next = presentInventory([item], inventoryRuntime.mode)[0]
-        return [
-          next,
-          ...current.filter((candidate) => candidate.id !== item.id),
-        ]
-      })
+      const item = await inventoryPort.addItem(input)
+      const allItems = await inventoryPort.getItems()
+      setInventoryItems(mapNativeInventory(allItems, new Date()))
       dispatch({ type: 'close-modal' })
       dispatch({
         type: 'show-toast',
         message:
-          inventoryRuntime.mode === 'native'
+          runtime.mode === 'native'
             ? '已提交，等待开发板确认'
-            : '已添加到 BROWSER MOCK',
+            : `已添加 ${item.name} 到 BROWSER MOCK`,
       })
     },
-    [inventoryRuntime],
+    [inventoryPort, runtime.mode],
   )
+
+  const removeInventoryItem = useCallback(
+    async (food: PresentedFood) => {
+      for (const id of food.sourceIds) {
+        await inventoryPort.removeItem(id)
+      }
+      dispatch({ type: 'close-modal' })
+      dispatch({
+        type: 'show-toast',
+        message:
+          runtime.mode === 'native'
+            ? `已提交取出 ${food.batchCount} 批，等待开发板确认`
+            : `已从 BROWSER MOCK 取出 ${food.batchCount} 批`,
+      })
+    },
+    [inventoryPort, runtime.mode],
+  )
+
+  const removeInventoryBatch = useCallback(async (id: string) => {
+    await inventoryPort.removeItem(id)
+    dispatch({ type: 'close-modal' })
+    dispatch({ type: 'show-toast', message: '已提交取出，等待开发板确认' })
+  }, [inventoryPort])
+
+  const updateInventoryQuantity = useCallback(
+    async (id: string, quantity: string) => {
+      if (!inventoryPort) throw new Error('请在手机 App 中修改数量')
+      await inventoryPort.updateItemQuantity(id, quantity)
+      setInventoryItems(
+        mapNativeInventory(await inventoryPort.getItems(), new Date()),
+      )
+      dispatch({ type: 'close-modal' })
+      dispatch({
+        type: 'show-toast',
+        message: `剩余数量已更新为 ${quantity}`,
+      })
+    },
+    [inventoryPort],
+  )
+
+  const saveFavoriteRecipe = useCallback((recipe: SavedRecipe) => {
+    setFavoriteRecipes((current) => [
+      recipe,
+      ...current.filter((candidate) => candidate.id !== recipe.id),
+    ])
+    dispatch({ type: 'show-toast', message: `已收藏：${recipe.cn}` })
+  }, [])
+
+  const saveAssistantRecipe = useCallback((recipe: AssistantRecipe) => {
+    saveFavoriteRecipe({
+      id: `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      key: 'unknown',
+      name: recipe.name,
+      cn: recipe.name,
+      kcal: null,
+      time: 30,
+      tags: ['AI 推荐'],
+      match: recipe.missingIngredients.length === 0,
+      need: [...recipe.availableIngredients, ...recipe.missingIngredients],
+      desc: recipe.reason,
+      steps: recipe.steps,
+    })
+  }, [saveFavoriteRecipe])
+
+  const assistantContext = useCallback((question: string) => {
+    let profile: unknown = {}
+    try {
+      profile = JSON.parse(localStorage.getItem('fridge-profile-v1') ?? '{}')
+    } catch {
+      profile = {}
+    }
+    return {
+      question,
+      inventory: inventoryItems.map((food) => ({
+        name: food.name,
+        quantity: food.quantity,
+        storage: food.storage,
+        addedDate: food.addedDate,
+        expiryDate: food.expiryDate,
+        status: food.status,
+      })),
+      profile,
+    }
+  }, [inventoryItems])
+
+  const ensureAssistantConfigured = useCallback(async () => {
+    const assistant =
+      (await runtime.credentials.getSummaries()).assistant
+    if (
+      assistant.status !== 'not_configured' &&
+      assistant.status !== 'needs_attention'
+    ) {
+      setCredentialTarget(null)
+      return true
+    }
+    setCredentialTarget('assistant')
+    dispatch({ type: 'close-modal' })
+    dispatch({ type: 'select-tab', tab: 'me' })
+    dispatch({ type: 'show-toast', message: '请先配置智能助手' })
+    return false
+  }, [runtime.credentials])
+
+  const startInventoryVoice = useCallback(() => {
+    const speech = runtime.speech.start()
+    return {
+      stop: speech.stop,
+      result: speech.result.then(async (text) => {
+        if (!(await ensureAssistantConfigured())) {
+          throw new Error('请先配置智能助手')
+        }
+        const reply = await runtime.assistant.ask(
+          assistantContext(
+            `请把下面这句话解析成需要放入冰箱的食物清单，并只写入 shoppingItems；每个食物保留名称和数量：${text}`,
+          ),
+        )
+        const parsedItems = reply.shoppingItems.length
+          ? reply.shoppingItems
+          : [{ name: text, quantity: '1份', reason: '语音添加' }]
+        for (const item of parsedItems) {
+          await inventoryPort.addItem({
+            name: item.name,
+            quantity: item.quantity || '1份',
+            storage: '冷藏室',
+            addedDate: localDateString(new Date()),
+            expiryDate: dateAfter(7),
+          })
+        }
+        setInventoryItems(
+          mapNativeInventory(await inventoryPort.getItems(), new Date()),
+        )
+        return parsedItems.length
+      }),
+    }
+  }, [
+    assistantContext,
+    ensureAssistantConfigured,
+    inventoryPort,
+    runtime.assistant,
+    runtime.speech,
+  ])
+
+  const askAssistant = useCallback(async (question: string) => {
+    if (!(await ensureAssistantConfigured())) return
+    dispatch({
+      type: 'open-modal',
+      kind: 'assistant-loading',
+      payload: question,
+    })
+    try {
+      const reply = await runtime.assistant.ask(assistantContext(question))
+      dispatch({
+        type: 'open-modal',
+        kind: 'assistant-result',
+        payload: { question, reply },
+      })
+    } catch (error) {
+      dispatch({ type: 'close-modal' })
+      dispatch({
+        type: 'show-toast',
+        message:
+          error instanceof Error ? error.message : '智能助手请求失败',
+      })
+      return
+    }
+  }, [assistantContext, ensureAssistantConfigured, runtime.assistant])
 
   const enterApp = useCallback(() => {
     tabHistory.current = []
@@ -223,31 +379,10 @@ export function App({
     () =>
       deriveMissingIngredients(
         state.planner,
-        inventoryItems.map((food) => food.key),
+        inventoryItems.flatMap((food) => [food.key, food.name]),
+        favoriteRecipes,
       ),
-    [inventoryItems, state.planner],
-  )
-  const demoWorld = useMemo(
-    () =>
-      buildDemoWorldSnapshot({
-        inventory: inventoryItems,
-        planner: state.planner,
-        missingItems: missingIngredients,
-      }),
-    [inventoryItems, missingIngredients, state.planner],
-  )
-  const openRecipeById = useCallback(
-    (recipeId: string) => {
-      const recipe = RECIPES.find((candidate) => candidate.id === recipeId)
-      if (!recipe) return
-      audio.play('ding')
-      dispatch({
-        type: 'open-modal',
-        kind: 'recipe-detail',
-        payload: recipe,
-      })
-    },
-    [audio],
+    [favoriteRecipes, inventoryItems, state.planner],
   )
 
   if (state.scene === 'kitchen') {
@@ -276,6 +411,9 @@ export function App({
             content: (
               <FoodDetailModal
                 food={state.modal.payload as PresentedFood}
+                onRemove={removeInventoryItem}
+                onRemoveBatch={removeInventoryBatch}
+                onUpdateQuantity={updateInventoryQuantity}
               />
             ),
           }
@@ -288,33 +426,64 @@ export function App({
         ? {
             title: `${(state.modal.payload as Recipe).cn} · COOKING`,
             content: (
-              <RecipeDetailModal recipe={state.modal.payload as Recipe} />
+              <RecipeDetailModal
+                recipe={state.modal.payload as Recipe}
+                credentials={runtime.credentials}
+                illustration={runtime.recipeIllustration}
+                onConfigure={() => {
+                  dispatch({ type: 'close-modal' })
+                  setCredentialTarget('recipe-illustration')
+                  dispatch({ type: 'select-tab', tab: 'me' })
+                }}
+              />
             ),
           }
       : state.modal?.kind === 'planner'
         ? {
-            title: 'CAL · 周菜谱规划',
+            title: 'CAL · 周食谱规划',
             content: (
               <MealPlannerModal
                 planner={state.planner}
+                recipes={favoriteRecipes}
                 missingIngredients={missingIngredients}
-                onAssign={(day, recipe) => {
-                  audio.play('success')
+                onAssign={(day, meal, recipe) => {
                   dispatch({
                     type: 'assign-recipe',
                     day,
+                    meal,
                     recipeId: recipe.id,
                   })
                   dispatch({
                     type: 'show-toast',
-                    message: '✓ 已加入周菜谱',
+                    message: '✓ 已加入周食谱',
                   })
                 }}
-                onClear={(day) => {
-                  audio.play('tick')
-                  dispatch({ type: 'clear-recipe', day })
+                onClear={(day, meal) =>
+                  dispatch({ type: 'clear-recipe', day, meal })
+                }
+              />
+            ),
+          }
+      : state.modal?.kind === 'favorites'
+        ? {
+            title: 'FAV · 个人收藏食谱',
+            content: (
+              <FavoriteRecipesModal
+                recipes={favoriteRecipes}
+                onOpen={(recipe) =>
+                  dispatch({
+                    type: 'open-modal',
+                    kind: 'recipe-detail',
+                    payload: recipe,
+                  })
+                }
+                onSave={saveFavoriteRecipe}
+                onDelete={(id) => {
+                  setFavoriteRecipes((current) =>
+                    current.filter((recipe) => recipe.id !== id),
+                  )
+                  dispatch({ type: 'show-toast', message: '食谱已删除' })
                 }}
-                onCue={audio.play}
               />
             ),
           }
@@ -322,35 +491,73 @@ export function App({
         ? {
             title: 'AI · 根据冰箱食材推荐',
             content: (
-              <DemoAgentPanel
-                mode="recommend"
-                snapshot={demoWorld}
-                requester={demoAgentRequester}
-                onOpenRecipe={openRecipeById}
-              />
+              <>
+                <div className="planner-intro">
+                  已识别：番茄、鸡蛋、香蕉、白菜。优先推荐能直接开做的菜谱。
+                </div>
+                <div className="recipe-strip">
+                  {favoriteRecipes.filter((recipe) => recipe.match)
+                    .slice(0, 3)
+                    .map((recipe) => (
+                      <RecipeMini
+                        recipe={recipe}
+                        label="READY"
+                        key={recipe.id}
+                        onOpen={(selected) =>
+                          dispatch({
+                            type: 'open-modal',
+                            kind: 'recipe-detail',
+                            payload: selected,
+                          })
+                        }
+                      />
+                    ))}
+                </div>
+              </>
             ),
           }
-      : state.modal?.kind === 'recipe-illustration'
-        ? {
-            title: 'IMAGE2 · 菜谱插画',
-            content: (
-              <IllustrationModal
-                defaultRecipeText={DEFAULT_ILLUSTRATION_RECIPE}
-              />
-            ),
-          }
-      : state.modal?.kind === 'recipe-agent'
+      : state.modal?.kind === 'assistant-loading'
         ? {
             title: 'Recipe Agent',
             content: (
-              <DemoAgentPanel
-                mode="agent"
-                message={String(state.modal.payload)}
-                snapshot={demoWorld}
-                requester={demoAgentRequester}
-                onOpenRecipe={openRecipeById}
-              />
+              <>
+                <PotTransition />
+                <div className="recipe-generating">
+                  正在结合真实库存、口味偏好和健康备注生成建议...
+                </div>
+              </>
             ),
+          }
+      : state.modal?.kind === 'assistant-result'
+        ? {
+            title: '智能助手 · 冰箱 Agent',
+            content: (() => {
+              const payload = state.modal?.payload as {
+                question: string
+                reply: AssistantReply
+              }
+              return (
+                <AssistantAnswer
+                  question={payload.question}
+                  reply={payload.reply}
+                  onAddShopping={() => {
+                    setShoppingItems((current) => [
+                      ...current,
+                      ...payload.reply.shoppingItems.map((item) =>
+                        createShopItem(item, '智能助手建议'),
+                      ),
+                    ])
+                    dispatch({ type: 'close-modal' })
+                    dispatch({ type: 'select-tab', tab: 'shop' })
+                    dispatch({
+                      type: 'show-toast',
+                      message: `已加入 ${payload.reply.shoppingItems.length} 项采购`,
+                    })
+                  }}
+                  onSaveRecipe={saveAssistantRecipe}
+                />
+              )
+            })(),
           }
       : state.modal
         ? { title: state.modal.kind, content: null }
@@ -363,9 +570,7 @@ export function App({
         muted={state.muted}
         connected={mqttStatus.connected}
         runtimeLabel={
-          inventoryRuntime.mode === 'browser-mock'
-            ? 'BROWSER MOCK'
-            : undefined
+          runtime.mode === 'browser-mock' ? 'BROWSER MOCK' : undefined
         }
         toast={state.toast}
         modal={modal}
@@ -384,97 +589,94 @@ export function App({
           audio.play('tick')
           dispatch({ type: 'close-modal' })
         }}
-        onRestartDemo={
-          inventoryRuntime.mode === 'browser-mock'
-            ? onRestartDemo ?? (() => window.location.reload())
-            : undefined
-        }
       >
-        <ShoppingScene
-          active={state.currentTab === 'shop'}
-          missingIngredients={missingIngredients}
-          onToast={(message) =>
-            dispatch({ type: 'show-toast', message })
-          }
-          onCue={audio.play}
-        />
-        <RecipeScene
-          active={state.currentTab === 'recipe'}
-          onOpenRecipe={(recipe) => {
-            audio.play('ding')
-            dispatch({
-              type: 'open-modal',
-              kind: 'recipe-detail',
-              payload: recipe,
-            })
-          }}
-          onOpenPlanner={() => {
-            audio.play('ding')
-            dispatch({ type: 'open-modal', kind: 'planner' })
-          }}
-          onOpenAi={() => {
-            audio.play('ding')
-            dispatch({ type: 'open-modal', kind: 'ai-recipe' })
-          }}
-          onOpenIllustration={() => {
-            audio.play('ding')
-            dispatch({ type: 'open-modal', kind: 'recipe-illustration' })
-          }}
-          onOpenAgent={(text) => {
-            audio.play('wake')
-            dispatch({
-              type: 'show-toast',
-              message: 'VOICE · Recipe Agent 正在听',
-            })
-            window.setTimeout(
-              () =>
-                dispatch({
-                  type: 'open-modal',
-                  kind: 'recipe-agent',
-                  payload: text,
+        {state.currentTab === 'fridge' ? (
+          <FridgeScene
+            items={inventoryItems}
+            connectionDetail={mqttStatus.detail}
+            onVoiceStart={startInventoryVoice}
+            onToast={(message) =>
+              dispatch({ type: 'show-toast', message })
+            }
+            onAddFood={() =>
+              dispatch({ type: 'open-modal', kind: 'add-food' })
+            }
+            onOpenFood={(food) =>
+              dispatch({
+                type: 'open-modal',
+                kind: 'food-detail',
+                payload: food,
+              })
+            }
+          />
+        ) : state.currentTab === 'shop' ? (
+          <ShoppingScene
+            items={shoppingItems}
+            missingIngredients={missingIngredients}
+            planner={state.planner}
+            recipes={favoriteRecipes}
+            onItemsChange={setShoppingItems}
+            onVoiceStart={() => {
+              const speech = runtime.speech.start()
+              return {
+                stop: speech.stop,
+                result: speech.result.then(async (text) => {
+                  if (!(await ensureAssistantConfigured())) {
+                    throw new Error('请先配置智能助手')
+                  }
+                  const reply = await runtime.assistant.ask(
+                    assistantContext(
+                      `请把下面这句话只解析成要购买的食物清单，并写入 shoppingItems：${text}`,
+                    ),
+                  )
+                  if (reply.shoppingItems.length) return reply.shoppingItems
+                  return [{
+                    name: text,
+                    quantity: '1份',
+                    reason: '语音添加',
+                  }] satisfies AssistantShoppingItem[]
                 }),
-              450,
-            )
-          }}
-          onSelectTab={selectTab}
-          onToast={(message) =>
-            dispatch({ type: 'show-toast', message })
-          }
-          onCue={audio.play}
-        />
-        <FridgeScene
-          active={state.currentTab === 'fridge'}
-          items={inventoryItems}
-          connectionDetail={mqttStatus.detail}
-          onAddFood={
-            inventoryRuntime.mode === 'native'
-              ? () => dispatch({ type: 'open-modal', kind: 'add-food' })
-              : undefined
-          }
-          onCue={audio.play}
-          onOpenFood={(food) =>
-            dispatch({
-              type: 'open-modal',
-              kind: 'food-detail',
-              payload: food,
-            })
-          }
-        />
-        <DeviceDisplayScene
-          active={state.currentTab === 'note'}
-          reducedMotion={state.reducedMotion}
-          onCue={audio.play}
-          onToast={(message) =>
-            dispatch({ type: 'show-toast', message })
-          }
-        />
-        <ProfileScene
-          active={state.currentTab === 'me'}
-          onCue={audio.play}
-          onToast={(message) =>
-            dispatch({ type: 'show-toast', message })
-          }
-        />
+              }
+            }}
+            onToast={(message) =>
+              dispatch({ type: 'show-toast', message })
+            }
+          />
+        ) : state.currentTab === 'recipe' ? (
+          <RecipeScene
+            onOpenPlanner={() =>
+              dispatch({ type: 'open-modal', kind: 'planner' })
+            }
+            onOpenFavorites={() =>
+              dispatch({ type: 'open-modal', kind: 'favorites' })
+            }
+            onOpenAgent={askAssistant}
+            onSpeechStart={() => runtime.speech.start()}
+            onToast={(message) =>
+              dispatch({ type: 'show-toast', message })
+            }
+          />
+        ) : state.currentTab === 'note' ? (
+          <DisplayScene
+            items={inventoryItems}
+            planner={state.planner}
+            recipes={favoriteRecipes}
+            connected={mqttStatus.connected}
+            native={runtime.mode === 'native'}
+            onSendDisplay={(displayState) =>
+              runtime.display.setState(displayState)
+            }
+            onToast={(message) => dispatch({ type: 'show-toast', message })}
+          />
+        ) : (
+          <ProfileScene
+            credentials={runtime.credentials}
+            openCredentialCapability={credentialTarget}
+            onToast={(message) =>
+              dispatch({ type: 'show-toast', message })
+            }
+          />
+        )}
       </AppShell>
     </div>
   )

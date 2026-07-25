@@ -1,0 +1,107 @@
+.entry-composer {
+  padding: 10px;
+  margin-bottom: 14px;
+  background: var(--panel);
+  border: 3px solid var(--border);
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+
+.entry-composer-head {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.entry-composer-icon {
+  display: flex;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background: var(--panel-3);
+  border: 2.5px solid var(--border);
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+
+.entry-composer-icon .pxi {
+  width: 28px;
+  height: 28px;
+}
+
+.entry-composer-title {
+  color: var(--text);
+  font-family: "DotGothic16", monospace;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.entry-composer-subtitle {
+  margin-top: 2px;
+  color: var(--text-mid);
+  font-family: "Silkscreen", monospace;
+  font-size: 7px;
+}
+
+.entry-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 86px;
+  gap: 7px;
+}
+
+.entry-fields input,
+.entry-composer textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  color: var(--text);
+  font-family: "DotGothic16", monospace;
+  font-size: 14px;
+  background: var(--panel-3);
+  border: 2.5px solid var(--border);
+  border-radius: 0;
+  outline: none;
+}
+
+.entry-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.entry-action {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 7px 8px;
+  color: var(--panel);
+  font-family: "DotGothic16", monospace;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  background: var(--sage-dk);
+  border: 2.5px solid var(--border);
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+
+.entry-action.voice { background: var(--coral); }
+.entry-action .pxi { width: 18px; height: 18px; }
+.entry-action:active { transform: translate(2px, 2px); box-shadow: none; }
+.entry-action:disabled { cursor: wait; opacity: 0.65; }
+
+.entry-sync-detail {
+  padding: 7px 9px;
+  overflow: hidden;
+  color: var(--text-mid);
+  font-family: "DotGothic16", monospace;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--panel-3);
+  border: 2px dashed var(--text-lt);
+}

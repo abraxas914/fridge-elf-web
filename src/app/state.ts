@@ -1,11 +1,14 @@
-import { RECIPES } from '../fixtures/goldenFixture'
+import { defaultFavoriteRecipes, type SavedRecipe } from './recipes'
 import type { ClockPort } from './ports'
 import {
   PLANNER_DAY_KEYS,
+  PLANNER_MEAL_KEYS,
   type AppState,
   type AppTab,
   type DisplayMode,
   type PlannerDayKey,
+  type PlannerDayState,
+  type PlannerMealKey,
   type PlannerState,
 } from './types'
 
@@ -21,11 +24,53 @@ export type AppAction =
   | { type: 'set-display-mode'; mode: DisplayMode }
   | { type: 'begin-note'; text: string }
   | { type: 'reveal-note'; text: string }
-  | { type: 'assign-recipe'; day: PlannerDayKey; recipeId: string }
-  | { type: 'clear-recipe'; day: PlannerDayKey }
+  | {
+      type: 'assign-recipe'
+      day: PlannerDayKey
+      meal: PlannerMealKey
+      recipeId: string
+    }
+  | { type: 'clear-recipe'; day: PlannerDayKey; meal: PlannerMealKey }
+
+export const emptyPlannerDay = (): PlannerDayState =>
+  Object.fromEntries(
+    PLANNER_MEAL_KEYS.map((meal) => [meal, null]),
+  ) as PlannerDayState
 
 export const emptyPlanner = (): PlannerState =>
-  Object.fromEntries(PLANNER_DAY_KEYS.map((day) => [day, null])) as PlannerState
+  Object.fromEntries(
+    PLANNER_DAY_KEYS.map((day) => [day, emptyPlannerDay()]),
+  ) as PlannerState
+
+function loadPlanner(): PlannerState {
+  try {
+    const saved: unknown = JSON.parse(
+      localStorage.getItem('fridge-planner-v2') ??
+        localStorage.getItem('fridge-planner-v1') ??
+        'null',
+    )
+    if (saved && typeof saved === 'object') {
+      const values = saved as Record<string, unknown>
+      const planner = emptyPlanner()
+      for (const day of PLANNER_DAY_KEYS) {
+        const value = values[day]
+        if (typeof value === 'string') {
+          planner[day].dinner = value
+        } else if (value && typeof value === 'object') {
+          const meals = value as Record<string, unknown>
+          for (const meal of PLANNER_MEAL_KEYS) {
+            planner[day][meal] =
+              typeof meals[meal] === 'string' ? meals[meal] : null
+          }
+        }
+      }
+      return planner
+    }
+  } catch {
+    // Start with an empty week when storage is unavailable.
+  }
+  return emptyPlanner()
+}
 
 export const initialAppState: AppState = {
   scene: 'kitchen',
@@ -34,10 +79,10 @@ export const initialAppState: AppState = {
   toast: null,
   muted: false,
   reducedMotion: false,
-  displayMode: 'sleep',
+  displayMode: 'home',
   noteText: '',
   visibleNoteText: '',
-  planner: emptyPlanner(),
+  planner: loadPlanner(),
 }
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -68,40 +113,60 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         noteText: action.text,
         visibleNoteText: state.reducedMotion ? action.text : '',
-        displayMode: 'awake',
+        displayMode: 'note',
       }
     case 'reveal-note':
       return { ...state, visibleNoteText: action.text }
     case 'assign-recipe':
       return {
         ...state,
-        planner: { ...state.planner, [action.day]: action.recipeId },
+        planner: {
+          ...state.planner,
+          [action.day]: {
+            ...state.planner[action.day],
+            [action.meal]: action.recipeId,
+          },
+        },
       }
     case 'clear-recipe':
       return {
         ...state,
-        planner: { ...state.planner, [action.day]: null },
+        planner: {
+          ...state.planner,
+          [action.day]: {
+            ...state.planner[action.day],
+            [action.meal]: null,
+          },
+        },
       }
   }
 }
 
 export function deriveMissingIngredients(
   planner: PlannerState,
-  inventoryKeys: readonly string[],
+  inventoryValues: readonly string[],
+  recipes: readonly SavedRecipe[] = defaultFavoriteRecipes(),
 ) {
-  const have = new Set(inventoryKeys)
+  const have = new Set(
+    inventoryValues.map((value) =>
+      value.trim().toLocaleLowerCase('zh-CN'),
+    ),
+  )
   const missing = new Set<string>()
   const labels: Record<string, string> = {
     rice: '米/藜麦',
     oat: '燕麦',
   }
 
-  for (const recipeId of Object.values(planner)) {
-    if (recipeId === null) continue
-    const recipe = RECIPES.find((candidate) => candidate.id === recipeId)
-    if (!recipe) continue
-    for (const key of recipe.need) {
-      if (!have.has(key)) missing.add(labels[key] ?? key)
+  for (const day of Object.values(planner)) {
+    for (const recipeId of Object.values(day)) {
+      if (recipeId === null) continue
+      const recipe = recipes.find((candidate) => candidate.id === recipeId)
+      if (!recipe) continue
+      for (const key of recipe.need) {
+        const normalized = key.trim().toLocaleLowerCase('zh-CN')
+        if (!have.has(normalized)) missing.add(labels[key] ?? key)
+      }
     }
   }
 

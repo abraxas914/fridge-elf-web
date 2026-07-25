@@ -1,14 +1,12 @@
-import { useState } from 'react'
-import type { AudioCue } from '../../app/ports'
+import { useRef, useState } from 'react'
+import type { SpeechSession } from '../../app/ports'
 import type { PresentedFood } from '../../app/types'
 import { PixelIcon } from '../../catalog/pixelIcons'
 import { FoodCard } from './FoodCard'
 import './FridgeScene.css'
 
-const STORAGE_TOTAL = 24
-const STORAGE_SEGMENTS = 12
-
 type FilterCategory = 'all' | 'ingredient' | 'drink' | 'other'
+type FreshnessFilter = 'all' | 'expiring' | 'urgent'
 
 const filters: readonly { category: FilterCategory; label: string }[] = [
   { category: 'all', label: '✦ 全部' },
@@ -18,124 +16,172 @@ const filters: readonly { category: FilterCategory; label: string }[] = [
 ]
 
 interface FridgeSceneProps {
-  active?: boolean
   items: readonly PresentedFood[]
   onOpenFood: (food: PresentedFood) => void
-  onCue?: (cue: AudioCue) => void
   onAddFood?: () => void
+  onVoiceStart?: () => SpeechSession<number>
+  onToast?: (message: string) => void
   connectionDetail?: string
 }
 
 export function FridgeScene({
-  active = true,
   items,
   onOpenFood,
-  onCue = () => undefined,
   onAddFood,
+  onVoiceStart,
+  onToast,
   connectionDetail,
 }: FridgeSceneProps) {
   const [currentCategory, setCurrentCategory] =
     useState<FilterCategory>('all')
-  const used = items.length
-  const pct = Math.round((used / STORAGE_TOTAL) * 100)
-  const filled = Math.max(
-    1,
-    Math.round((pct / 100) * STORAGE_SEGMENTS),
-  )
-  const left = STORAGE_TOTAL - used
-  const storageLabel =
-    pct >= 80
-      ? 'FULL · 需清理!'
-      : pct >= 60
-        ? 'FILLING · 空间紧张'
-        : 'ROOMY · 空间充足'
-  const storageTip =
-    pct >= 80
-      ? '! 冰箱快满了 · 建议整理一下'
-      : pct >= 60
-        ? `BOX · 还有 ${left} 个位置 · 空间紧张`
-        : `✓ 空间充足 · 还可放 ${left} 件`
-  const storageTipClass =
-    pct >= 80 ? ' warn' : pct < 60 ? ' ok' : ''
-  const visibleItems =
+  const [freshnessFilter, setFreshnessFilter] =
+    useState<FreshnessFilter>('all')
+  const [listening, setListening] = useState(false)
+  const speechSession = useRef<SpeechSession<number> | null>(null)
+  const used = items.reduce((total, food) => total + food.batchCount, 0)
+  const foodKinds = new Set(items.map((food) => food.name)).size
+  const categoryItems =
     currentCategory === 'all'
       ? items
       : items.filter((food) => food.category === currentCategory)
-  const fixtureStats = items.every((food) => food.source === 'fixture')
-  const expiring = fixtureStats
-    ? 3
-    : items.filter(
-        (food) =>
-          food.expiresInDays !== null &&
-          food.expiresInDays > 1 &&
-          food.expiresInDays <= 3,
-      ).length
-  const urgent = fixtureStats
-    ? 2
-    : items.filter(
-        (food) =>
-          food.expiresInDays !== null && food.expiresInDays <= 1,
-      ).length
+  const visibleItems = categoryItems.filter((food) => {
+    if (freshnessFilter === 'urgent') {
+      return food.expiresInDays !== null && food.expiresInDays <= 1
+    }
+    if (freshnessFilter === 'expiring') {
+      return (
+        food.expiresInDays !== null &&
+        food.expiresInDays > 1 &&
+        food.expiresInDays <= 3
+      )
+    }
+    return true
+  })
+  const expiring = items
+    .filter(
+      (food) =>
+        food.expiresInDays !== null &&
+        food.expiresInDays > 1 &&
+        food.expiresInDays <= 3,
+    )
+    .reduce((total, food) => total + food.batchCount, 0)
+  const urgent = items
+    .filter(
+      (food) =>
+        food.expiresInDays !== null && food.expiresInDays <= 1,
+    )
+    .reduce((total, food) => total + food.batchCount, 0)
+  const fresh = Math.max(0, used - expiring - urgent)
 
   return (
     <section
-      className={`tab${active ? ' active' : ''}`}
+      className="tab active"
       data-tab="fridge"
       data-testid="fridge-scene"
-      hidden={!active}
     >
       {onAddFood ? (
-        <div className="inventory-actions">
-          <span className="inventory-sync-detail">
+        <div className="entry-composer inventory-entry">
+          <div className="entry-composer-head">
+            <span className="entry-composer-icon">
+              <PixelIcon name="box" className="pxi" />
+            </span>
+            <div>
+              <div className="entry-composer-title">添加库存食物</div>
+              <div className="entry-composer-subtitle">MANUAL + VOICE</div>
+            </div>
+          </div>
+          <div className="entry-sync-detail">
             {connectionDetail ?? '连接中'}
-          </span>
-          <button type="button" onClick={onAddFood}>
-            + 添加食物
-          </button>
+          </div>
+          <div className="entry-actions">
+            <button className="entry-action" type="button" onClick={onAddFood}>
+              <PixelIcon name="plus" className="pxi" />
+              手动添加
+            </button>
+            <button
+              className="entry-action voice"
+              type="button"
+              disabled={listening}
+              onPointerDown={(event) => {
+                if (listening) return
+                event.currentTarget.setPointerCapture(event.pointerId)
+                setListening(true)
+                const session = onVoiceStart?.()
+                if (!session) {
+                  setListening(false)
+                  onToast?.('请在手机 App 中使用语音添加')
+                  return
+                }
+                speechSession.current = session
+                void session.result.then((count) => {
+                  onToast?.(`语音添加 ${count} 项食物`)
+                }).catch((error) => {
+                  onToast?.(
+                    error instanceof Error ? error.message : '语音添加失败',
+                  )
+                }).finally(() => {
+                  setListening(false)
+                  speechSession.current = null
+                })
+              }}
+              onPointerUp={() => speechSession.current?.stop()}
+              onPointerCancel={() => speechSession.current?.stop()}
+              onContextMenu={(event) => event.preventDefault()}
+              onClick={(event) => event.preventDefault()}
+            >
+              <PixelIcon name="mic" className="pxi" />
+              {listening ? '松开发送' : '按住说话'}
+            </button>
+          </div>
         </div>
       ) : null}
       <div className="storage-wrap">
         <div className="storage-head">
           <div className="l">
             <PixelIcon name="box" className="icon pxi storage-px" />
-            <span className="lbl">{storageLabel}</span>
+            <span className="lbl">LIVE · 实时库存</span>
           </div>
           <div className="val">
-            <span>{used}</span><span className="pct">/24</span>
+            <span>{used}</span><span className="pct">批</span>
           </div>
         </div>
-        <div className="storage-bar">
-          {Array.from({ length: STORAGE_SEGMENTS }, (_, index) => {
-            let className = 'storage-seg'
-            if (index < filled) {
-              className += ' on'
-              if (pct >= 80) className += ' low'
-              else if (pct >= 60) className += ' mid'
-            }
-            return (
-              <span
-                className={className}
-                data-testid="storage-segment"
-                key={index}
-              />
-            )
-          })}
+        <div className="inventory-health-bar" aria-label="库存新鲜度分布">
+          <span className="fresh" style={{ flexGrow: fresh }} />
+          <span className="expiring" style={{ flexGrow: expiring }} />
+          <span className="urgent" style={{ flexGrow: urgent }} />
         </div>
-        <div className={`storage-tip${storageTipClass}`}>{storageTip}</div>
+        <div className="storage-tip ok">
+          {foodKinds} 种食物 · {used} 个录入批次 · 无虚构容量上限
+        </div>
       </div>
       <div className="fridge-stats">
-        <div className="stat-cell a">
+        <button
+          aria-pressed={freshnessFilter === 'all'}
+          className={`stat-cell a${freshnessFilter === 'all' ? ' active' : ''}`}
+          type="button"
+          onClick={() => setFreshnessFilter('all')}
+        >
           <span className="stat-num">{used}</span>
           <span className="stat-lbl">总食材</span>
-        </div>
-        <div className="stat-cell b">
+        </button>
+        <button
+          aria-pressed={freshnessFilter === 'expiring'}
+          className={`stat-cell b${freshnessFilter === 'expiring' ? ' active' : ''}`}
+          type="button"
+          onClick={() => setFreshnessFilter('expiring')}
+        >
           <span className="stat-num">{expiring}</span>
           <span className="stat-lbl">将过期</span>
-        </div>
-        <div className="stat-cell c">
+        </button>
+        <button
+          aria-pressed={freshnessFilter === 'urgent'}
+          className={`stat-cell c${freshnessFilter === 'urgent' ? ' active' : ''}`}
+          type="button"
+          onClick={() => setFreshnessFilter('urgent')}
+        >
           <span className="stat-num">{urgent}</span>
           <span className="stat-lbl">紧急</span>
-        </div>
+        </button>
       </div>
       <div className="filter-row">
         {filters.map((filter) => (
@@ -145,26 +191,20 @@ export function FridgeScene({
             }`}
             type="button"
             key={filter.category}
-            onClick={() => {
-              onCue('tick')
-              setCurrentCategory(filter.category)
-            }}
+            onClick={() => setCurrentCategory(filter.category)}
           >
             {filter.label}
           </button>
         ))}
       </div>
       <div className="food-grid">
-        {visibleItems.map((food) => (
-          <FoodCard
-            food={food}
-            key={food.id}
-            onOpen={(selected) => {
-              onCue('tick')
-              onOpenFood(selected)
-            }}
-          />
-        ))}
+        {visibleItems.length ? (
+          visibleItems.map((food) => (
+            <FoodCard food={food} key={food.id} onOpen={onOpenFood} />
+          ))
+        ) : (
+          <p className="food-filter-empty">当前筛选下没有食物</p>
+        )}
       </div>
     </section>
   )

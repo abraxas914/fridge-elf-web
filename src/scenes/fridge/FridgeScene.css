@@ -107,11 +107,27 @@
 
 .stat-cell {
   position: relative;
+  width: 100%;
   padding: 10px 4px;
+  color: inherit;
+  cursor: pointer;
   text-align: center;
   background: var(--panel);
   border: 3px solid var(--border);
+  border-radius: 0;
   box-shadow: 3px 3px 0 var(--shadow);
+}
+
+.stat-cell.active {
+  outline: 3px solid var(--coral);
+  outline-offset: -7px;
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--shadow);
+}
+
+.stat-cell:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
 }
 
 .stat-cell::before {
@@ -180,6 +196,17 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+}
+
+.food-filter-empty {
+  grid-column: 1 / -1;
+  padding: 20px 12px;
+  margin: 0;
+  color: var(--text-mid);
+  font-family: "DotGothic16", monospace;
+  text-align: center;
+  background: var(--panel);
+  border: 2px dashed var(--text-lt);
 }
 
 .food-item {
@@ -453,25 +480,6 @@
   letter-spacing: 1px;
   text-align: center;
 }
-.inventory-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 2px 10px;
-}
-
-.inventory-sync-detail {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--text-mid);
-  font-family: "DotGothic16", monospace;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.inventory-actions button,
 .add-food-submit {
   flex-shrink: 0;
   padding: 7px 10px;
@@ -485,7 +493,6 @@
   box-shadow: 2px 2px 0 var(--shadow);
 }
 
-.inventory-actions button:active,
 .add-food-submit:active {
   transform: translate(2px, 2px);
   box-shadow: none;
@@ -494,6 +501,52 @@
 .add-food-form {
   display: grid;
   gap: 10px;
+}
+
+.food-choice-fieldset {
+  min-width: 0;
+  padding: 8px;
+  border: 2px dashed var(--text-lt);
+}
+
+.food-choice-fieldset legend {
+  padding: 0 6px;
+  color: var(--text-mid);
+  font-size: 12px;
+}
+
+.food-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 210px;
+  overflow-y: auto;
+}
+
+.food-choice-grid button {
+  display: grid;
+  gap: 3px;
+  place-items: center;
+  min-width: 0;
+  min-height: 64px;
+  padding: 5px 2px;
+  color: var(--text);
+  font-family: "DotGothic16", monospace;
+  font-size: 10px;
+  background: var(--panel-3);
+  border: 2px solid var(--border);
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+
+.food-choice-grid button.selected {
+  background: var(--butter);
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.food-choice-grid img {
+  width: 34px;
+  height: 34px;
 }
 
 .add-food-form label {
@@ -538,3 +591,76 @@
   cursor: wait;
   opacity: 0.65;
 }
+
+.inventory-health-bar {
+  display: flex;
+  gap: 2px;
+  min-height: 16px;
+  padding: 2px;
+  background: var(--border);
+}
+
+.inventory-health-bar span { min-width: 3px; }
+.inventory-health-bar .fresh { background: var(--sage); }
+.inventory-health-bar .expiring { background: var(--butter); }
+.inventory-health-bar .urgent { background: var(--coral); }
+
+.food-batch-badge {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 4;
+  padding: 2px 4px;
+  color: var(--border);
+  font-family: "DotGothic16", monospace;
+  font-size: 9px;
+  font-weight: bold;
+  background: var(--butter);
+  border: 2px solid var(--border);
+}
+
+.food-remove-button,
+.food-remove-confirm button {
+  min-height: 40px;
+  padding: 7px 12px;
+  color: var(--text);
+  font-family: "DotGothic16", monospace;
+  font-weight: bold;
+  background: var(--panel-3);
+  border: 2px solid var(--border);
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+
+.food-remove-button {
+  width: 100%;
+  margin-top: 12px;
+  color: var(--panel);
+  background: var(--coral-dk);
+}
+
+.food-remove-confirm {
+  padding: 10px;
+  margin-top: 12px;
+  background: var(--butter-lt);
+  border: 2px dashed var(--border);
+}
+
+.food-remove-confirm p { margin: 0 0 9px; }
+
+.food-remove-confirm > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.food-remove-confirm button.danger {
+  color: var(--panel);
+  background: var(--coral-dk);
+}
+
+.food-partial-remove { display: grid; gap: 8px; padding: 10px; margin-top: 10px; background: var(--butter-lt); border: 2px dashed var(--border); }
+.food-partial-remove label { display: grid; gap: 4px; }
+.food-partial-remove select,
+.food-partial-remove input { min-width: 0; padding: 8px; color: var(--text); font-family: "DotGothic16", monospace; background: var(--panel); border: 2px solid var(--border); }
+.food-partial-row { display: grid; grid-template-columns: 1fr auto; gap: 7px; }
+.food-partial-row button { padding: 6px 10px; color: var(--panel); font-family: "DotGothic16", monospace; font-weight: bold; background: var(--coral); border: 2px solid var(--border); }

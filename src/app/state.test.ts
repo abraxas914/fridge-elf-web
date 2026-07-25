@@ -139,28 +139,66 @@ describe('Life Helper state', () => {
     const assigned = appReducer(initialAppState, {
       type: 'assign-recipe',
       day: 'wed',
+      meal: 'dinner',
       recipeId: 'recipe-tomato-egg-bowl',
     })
     const replaced = appReducer(assigned, {
       type: 'assign-recipe',
       day: 'wed',
+      meal: 'dinner',
       recipeId: 'recipe-salmon-rice',
     })
-    expect(replaced.planner.wed).toBe('recipe-salmon-rice')
+    expect(replaced.planner.wed.dinner).toBe('recipe-salmon-rice')
     expect(
-      appReducer(replaced, { type: 'clear-recipe', day: 'wed' }).planner.wed,
+      appReducer(replaced, {
+        type: 'clear-recipe',
+        day: 'wed',
+        meal: 'dinner',
+      }).planner.wed.dinner,
     ).toBeNull()
+  })
+
+  it('keeps breakfast, lunch, and dinner assignments independent', () => {
+    const breakfast = appReducer(initialAppState, {
+      type: 'assign-recipe',
+      day: 'mon',
+      meal: 'breakfast',
+      recipeId: 'recipe-banana-pancake',
+    })
+    const dinner = appReducer(breakfast, {
+      type: 'assign-recipe',
+      day: 'mon',
+      meal: 'dinner',
+      recipeId: 'recipe-tomato-egg-bowl',
+    })
+
+    expect(dinner.planner.mon).toEqual({
+      breakfast: 'recipe-banana-pancake',
+      lunch: null,
+      dinner: 'recipe-tomato-egg-bowl',
+    })
+  })
+
+  it('uses the approved calendar display mode', () => {
+    const state = appReducer(initialAppState, {
+      type: 'set-display-mode',
+      mode: 'calendar',
+    })
+
+    expect(state.displayMode).toBe('calendar')
   })
 
   it('derives only missing planner ingredients in HTML order', () => {
     const planned = appReducer(initialAppState, {
       type: 'assign-recipe',
       day: 'wed',
+      meal: 'dinner',
       recipeId: 'recipe-salmon-rice',
     })
     const withBreakfast = appReducer(planned, {
       type: 'assign-recipe',
       day: 'thu',
+      meal: 'breakfast',
       recipeId: 'recipe-banana-pancake',
     })
 

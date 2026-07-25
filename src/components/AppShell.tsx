@@ -23,7 +23,6 @@ interface AppShellProps {
   onToggleMute: () => void
   onOpenPeek: () => void
   onCloseModal: () => void
-  onRestartDemo?: () => void
 }
 
 export function AppShell({
@@ -38,7 +37,6 @@ export function AppShell({
   onToggleMute,
   onOpenPeek,
   onCloseModal,
-  onRestartDemo,
 }: AppShellProps) {
   const bodyRef = useRef<HTMLElement>(null)
 
@@ -55,7 +53,6 @@ export function AppShell({
         runtimeLabel={runtimeLabel}
         onToggleMute={onToggleMute}
         onOpenPeek={onOpenPeek}
-        onRestartDemo={onRestartDemo}
       />
       <main className="app-body" ref={bodyRef}>{children}</main>
       <BottomNav currentTab={currentTab} onSelectTab={onSelectTab} />

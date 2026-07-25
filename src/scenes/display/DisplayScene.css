@@ -1,0 +1,153 @@
+.display-device {
+  position: relative;
+  width: min(76vw, 300px);
+  padding: 0;
+  margin: 10px auto 18px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.display-handle { display: none; }
+
+.display-screen {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 3 / 5;
+  place-items: center;
+  overflow: hidden;
+  padding: 18px;
+  color: #fff8e7;
+  text-align: center;
+  background: #20231f;
+  border: 3px solid #111512;
+  box-shadow: inset 0 0 0 3px #4b5049, 4px 4px 0 rgb(17 21 18 / 28%);
+}
+
+.display-home,
+.display-paper,
+.display-panel,
+.display-calendar {
+  display: grid;
+  width: 100%;
+  gap: 12px;
+  place-items: center;
+  font-family: "DotGothic16", monospace;
+}
+
+.display-home > span,
+.display-paper > span,
+.display-panel > span,
+.display-calendar > span,
+.display-send-row span {
+  font-family: "Silkscreen", monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+
+.display-face {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  background: transparent;
+  border: 0;
+}
+
+.display-face i { position: absolute; display: block; }
+.display-face .eye { top: 43px; width: 24px; height: 15px; border: 6px solid #fff8e7; border-bottom: 0; }
+.display-face .eye.left { left: 28px; }
+.display-face .eye.right { right: 28px; }
+.display-face .cheek { top: 78px; width: 22px; height: 15px; background: #f07f6d; }
+.display-face .cheek.left { left: 17px; }
+.display-face .cheek.right { right: 17px; }
+.display-face .mouth { bottom: 36px; left: 58px; width: 32px; height: 15px; border: 6px solid #fff8e7; border-top: 0; }
+
+.display-paper {
+  min-height: 72%;
+  padding: 16px;
+  color: var(--text);
+  background: #fff5d7;
+  border: 3px solid #32261d;
+  box-shadow: 7px 7px 0 #d47c66;
+}
+.display-paper p { font-size: 20px; line-height: 1.55; }
+
+.display-panel { align-content: center; }
+.display-panel p {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  padding: 10px 5px;
+  margin: 0;
+  border-bottom: 1px solid #8b8d80;
+}
+.display-panel.inventory { align-content: start; gap: 4px; padding-top: 20px; }
+.display-panel.inventory p { padding: 7px 3px; font-size: 13px; }
+
+.display-calendar strong { font-size: 92px; line-height: 1; color: #efbf69; }
+.display-calendar b { font-size: 18px; }
+.display-calendar p {
+  max-width: 90%;
+  margin: 0;
+  color: #d8d1b8;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.display-feet { display: none; }
+
+.display-widgets {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+}
+.display-widgets button,
+.display-send-row button,
+.display-quick-notes button {
+  color: var(--text);
+  font-family: "DotGothic16", monospace;
+  font-weight: bold;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+.display-widgets button { display: grid; min-width: 0; min-height: 66px; gap: 3px; place-items: center; padding: 5px 1px; font-size: 11px; }
+.display-widgets button.selected { background: var(--butter); transform: translate(2px, 2px); box-shadow: none; }
+.display-widget-icon { width: 26px; height: 26px; }
+
+.display-content-editor {
+  padding: 12px;
+  margin: 14px 0 24px;
+  background: var(--panel);
+  border: 3px solid var(--border);
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+.display-scene { padding-bottom: 16px; }
+.display-content-editor .section-title { margin-top: 0; }
+.display-content-editor textarea,
+.display-content-editor input {
+  width: 100%;
+  padding: 9px;
+  color: var(--text);
+  font-family: "DotGothic16", monospace;
+  font-size: 14px;
+  background: var(--panel-3);
+  border: 2px solid var(--border);
+}
+.display-content-editor textarea { resize: none; }
+.display-quick-notes { display: flex; gap: 6px; padding: 8px 0; overflow-x: auto; }
+.display-quick-notes button { flex-shrink: 0; min-height: 32px; padding: 4px 8px; font-size: 11px; }
+.display-send-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.display-send-row button { min-height: 40px; padding: 7px 12px; color: var(--panel); background: var(--sage-dk); }
+.display-meal-fields,
+.display-calendar-fields { display: grid; gap: 8px; margin-bottom: 10px; }
+.display-meal-fields label,
+.display-calendar-fields label {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  font-family: "DotGothic16", monospace;
+  font-size: 12px;
+  font-weight: bold;
+}

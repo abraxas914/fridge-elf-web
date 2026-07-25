@@ -28,8 +28,8 @@ test('locks the released product baseline', () => {
   assert.deepEqual(validateBaseline(baseline), [])
 })
 
-test('accepts an empty digest map before the release source is synchronized', async () => {
+test('verifies the synchronized release product files', async () => {
   const result = await verifyBaselineFiles(baseline)
   assert.deepEqual(result.errors, [])
-  assert.equal(result.checkedFiles, 0)
+  assert.ok(result.checkedFiles > 20)
 })
