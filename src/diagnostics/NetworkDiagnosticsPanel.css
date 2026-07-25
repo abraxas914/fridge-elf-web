@@ -162,6 +162,25 @@
   white-space: nowrap;
 }
 
+.network-diagnostics-context {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 2px;
+  padding: 7px;
+  border: 1px dashed var(--sage-dk);
+  background: rgb(122 153 104 / 14%);
+  overflow-wrap: anywhere;
+}
+
+.network-diagnostics-context b {
+  color: var(--sage-dk);
+}
+
+.network-diagnostics-context span {
+  color: var(--text-mid);
+  font-size: 10px;
+}
+
 .network-diagnostics-status {
   padding: 8px;
   border: 2px dashed var(--sage-dk);

@@ -155,6 +155,34 @@ export function NetworkDiagnosticsPanel({
                       {event.durationMs ?? 0}ms ·{' '}
                       {event.requestId.slice(0, 8)}
                     </small>
+                    {event.contextMeta ? (
+                      <div className="network-diagnostics-context">
+                        <b>
+                          CONTEXT V{event.contextMeta.contextVersion}
+                          {' · '}
+                          {event.contextMeta.serializedBytes.toLocaleString(
+                            'en-US',
+                          )}{' '}
+                          BYTES
+                        </b>
+                        <span>
+                          {event.contextMeta.inventoryCount} INVENTORY
+                          {' · '}
+                          {event.contextMeta.plannedMealCount} MEALS
+                          {' · '}
+                          {event.contextMeta.missingItemCount} MISSING
+                          {' · '}
+                          {event.contextMeta.recipeCount} RECIPES
+                        </span>
+                        <span>
+                          {event.contextMeta.truncated
+                            ? 'TRUNCATED'
+                            : 'NO TRUNCATION'}
+                          {' · '}
+                          {event.contextMeta.omittedCount} OMITTED
+                        </span>
+                      </div>
+                    ) : null}
                     <code>{event.target}</code>
                   </article>
                 ))
