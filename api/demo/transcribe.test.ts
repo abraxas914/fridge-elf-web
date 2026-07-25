@@ -123,6 +123,7 @@ describe('Demo transcription Node request boundary', () => {
   })
 
   it('rejects an oversized Content-Length before consuming the stream', async () => {
+    const destroy = vi.fn()
     const streamed = streamedRequest(
       [new Uint8Array([1, 2, 3])],
       {
@@ -132,12 +133,13 @@ describe('Demo transcription Node request boundary', () => {
     )
 
     const response = await handleTranscribeNodeRequest(
-      streamed.request,
+      { ...streamed.request, destroy },
       environment,
     )
 
     expect(response.status).toBe(413)
     expect(streamed.consumed()).toBe(0)
+    expect(destroy).toHaveBeenCalledOnce()
   })
 
   it('stops consuming a chunked stream as soon as it crosses the limit', async () => {
@@ -178,6 +180,11 @@ describe('Demo transcription Node request boundary', () => {
       return 17
     })
     const clearTimeout = vi.fn()
+    const returnIterator = vi.fn(async () => ({
+      done: true as const,
+      value: undefined,
+    }))
+    const destroy = vi.fn()
     const request = {
       method: 'POST',
       headers: {
@@ -192,8 +199,10 @@ describe('Demo transcription Node request boundary', () => {
           next: () => new Promise<IteratorResult<Uint8Array>>(
             () => undefined,
           ),
+          return: returnIterator,
         }
       },
+      destroy,
     }
 
     const pending = handleTranscribeNodeRequest(
@@ -217,6 +226,119 @@ describe('Demo transcription Node request boundary', () => {
       },
     })
     expect(clearTimeout).toHaveBeenCalledWith(17)
+    expect(returnIterator).toHaveBeenCalledOnce()
+    expect(destroy).toHaveBeenCalledOnce()
+  })
+
+  it('removes the abort listener immediately and closes a pending iterator', async () => {
+    const controller = new AbortController()
+    const addEventListener = vi.spyOn(
+      controller.signal,
+      'addEventListener',
+    )
+    const removeEventListener = vi.spyOn(
+      controller.signal,
+      'removeEventListener',
+    )
+    const returnIterator = vi.fn(async () => ({
+      done: true as const,
+      value: undefined,
+    }))
+    const destroy = vi.fn()
+    const pending = readLimitedRequestBody(
+      {
+        headers: {},
+        destroy,
+        [Symbol.asyncIterator]() {
+          return {
+            next: () => new Promise<IteratorResult<Uint8Array>>(
+              () => undefined,
+            ),
+            return: returnIterator,
+          }
+        },
+      },
+      controller.signal,
+    )
+    await Promise.resolve()
+
+    controller.abort()
+
+    await expect(pending).rejects.toMatchObject({
+      code: 'REQUEST_BODY_INTERRUPTED',
+    })
+    expect(addEventListener).toHaveBeenCalledTimes(1)
+    expect(removeEventListener).toHaveBeenCalledTimes(1)
+    expect(removeEventListener).toHaveBeenCalledWith(
+      'abort',
+      expect.any(Function),
+    )
+    expect(returnIterator).toHaveBeenCalledOnce()
+    expect(destroy).toHaveBeenCalledOnce()
+  })
+
+  it('releases an oversized iterator but leaves a normal read untouched', async () => {
+    const oversizedReturn = vi.fn(async () => ({
+      done: true as const,
+      value: undefined,
+    }))
+    const oversizedDestroy = vi.fn()
+    let oversizedIndex = 0
+    const oversized = readLimitedRequestBody({
+      headers: {},
+      destroy: oversizedDestroy,
+      [Symbol.asyncIterator]() {
+        return {
+          next: vi.fn(async () => {
+            oversizedIndex += 1
+            return {
+              done: false as const,
+              value:
+                oversizedIndex === 1
+                  ? new Uint8Array(MAX_TRANSCRIBE_REQUEST_BYTES)
+                  : new Uint8Array([1]),
+            }
+          }),
+          return: oversizedReturn,
+        }
+      },
+    })
+
+    await expect(oversized).rejects.toMatchObject({
+      code: 'REQUEST_BODY_TOO_LARGE',
+    })
+    expect(oversizedReturn).toHaveBeenCalledOnce()
+    expect(oversizedDestroy).toHaveBeenCalledOnce()
+
+    const normalReturn = vi.fn(async () => ({
+      done: true as const,
+      value: undefined,
+    }))
+    const normalDestroy = vi.fn()
+    let normalIndex = 0
+    await expect(readLimitedRequestBody({
+      headers: {},
+      destroy: normalDestroy,
+      [Symbol.asyncIterator]() {
+        return {
+          next: vi.fn(async () => {
+            normalIndex += 1
+            return normalIndex === 1
+              ? {
+                  done: false as const,
+                  value: new Uint8Array([1, 2, 3]),
+                }
+              : {
+                  done: true as const,
+                  value: undefined,
+                }
+          }),
+          return: normalReturn,
+        }
+      },
+    })).resolves.toEqual(Buffer.from([1, 2, 3]))
+    expect(normalReturn).not.toHaveBeenCalled()
+    expect(normalDestroy).not.toHaveBeenCalled()
   })
 
   it('rejects a pre-aborted request without consuming its body', async () => {

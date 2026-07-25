@@ -17,6 +17,8 @@ export interface NodeRequest {
   on?: (event: string, listener: () => void) => unknown
   off?: (event: string, listener: () => void) => unknown
   removeListener?: (event: string, listener: () => void) => unknown
+  destroy?: (error?: Error) => unknown
+  resume?: () => unknown
   [Symbol.asyncIterator]?: () => AsyncIterator<Uint8Array>
 }
 
@@ -65,6 +67,33 @@ function ensureBodySize(size: number) {
   }
 }
 
+async function releaseNodeRequest(
+  request: NodeRequest,
+  iterator?: AsyncIterator<Uint8Array>,
+) {
+  let released = false
+  if (request.destroy) {
+    try {
+      request.destroy()
+      released = true
+    } catch {
+      // Fall through to resume when destroy is unavailable at runtime.
+    }
+  }
+  if (!released) {
+    try {
+      request.resume?.()
+    } catch {
+      // Iterator return below is the remaining best-effort release.
+    }
+  }
+  try {
+    await iterator?.return?.()
+  } catch {
+    // The original bounded-read error remains the public failure.
+  }
+}
+
 export async function readLimitedRequestBody(
   request: NodeRequest,
   signal?: AbortSignal,
@@ -79,6 +108,7 @@ export async function readLimitedRequestBody(
     /^\d+$/.test(contentLength) &&
     Number(contentLength) > MAX_TRANSCRIBE_REQUEST_BYTES
   ) {
+    await releaseNodeRequest(request)
     throw new RequestBodyTooLargeError()
   }
   if (Buffer.isBuffer(request.body)) {
@@ -105,27 +135,55 @@ export async function readLimitedRequestBody(
   const iterator = (
     request as AsyncIterable<Uint8Array>
   )[Symbol.asyncIterator]()
-  while (true) {
-    ensureActive()
-    const item = signal
-      ? await new Promise<IteratorResult<Uint8Array>>(
-          (resolve, reject) => {
-            const onAbort = () => {
-              reject(new RequestBodyInterruptedError())
-            }
-            signal.addEventListener('abort', onAbort, { once: true })
-            iterator.next().then(resolve, reject).finally(() => {
-              signal.removeEventListener('abort', onAbort)
-            })
-          },
-        )
-      : await iterator.next()
-    if (item.done) break
-    const chunk = item.value
-    const buffer = Buffer.from(chunk)
-    size += buffer.byteLength
-    ensureBodySize(size)
-    chunks.push(buffer)
+  let completed = false
+  try {
+    while (true) {
+      ensureActive()
+      const item = signal
+        ? await new Promise<IteratorResult<Uint8Array>>(
+            (resolve, reject) => {
+              let settled = false
+              const cleanup = () => {
+                signal.removeEventListener('abort', onAbort)
+              }
+              const settle = (
+                callback: () => void,
+              ) => {
+                if (settled) return
+                settled = true
+                cleanup()
+                callback()
+              }
+              const onAbort = () => {
+                settle(() =>
+                  reject(new RequestBodyInterruptedError()),
+                )
+              }
+              signal.addEventListener('abort', onAbort, { once: true })
+              if (signal.aborted) {
+                onAbort()
+                return
+              }
+              iterator.next().then(
+                (value) => settle(() => resolve(value)),
+                (error) => settle(() => reject(error)),
+              )
+            },
+          )
+        : await iterator.next()
+      if (item.done) {
+        completed = true
+        break
+      }
+      const buffer = Buffer.from(item.value)
+      size += buffer.byteLength
+      ensureBodySize(size)
+      chunks.push(buffer)
+    }
+  } finally {
+    if (!completed) {
+      await releaseNodeRequest(request, iterator)
+    }
   }
   return Buffer.concat(chunks, size)
 }
