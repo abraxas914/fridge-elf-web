@@ -4,6 +4,10 @@ import {
   ILLUSTRATION_STYLES,
   type IllustrationStyleId,
 } from '../../illustration/recipePlan'
+import {
+  requestDemoIllustration,
+  type DemoIllustrationInput,
+} from '../../ai/demoApi'
 import './IllustrationModal.css'
 
 interface IllustrationResult {
@@ -15,25 +19,12 @@ interface IllustrationResult {
 
 interface IllustrationModalProps {
   defaultRecipeText: string
-  demoToken: string
-  fetcher?: typeof fetch
-}
-
-async function readError(response: Response) {
-  try {
-    const payload = (await response.json()) as {
-      error?: { message?: string }
-    }
-    return payload.error?.message ?? '图片生成失败'
-  } catch {
-    return '图片生成失败'
-  }
+  requester?: (input: DemoIllustrationInput) => Promise<Blob>
 }
 
 export function IllustrationModal({
   defaultRecipeText,
-  demoToken,
-  fetcher = fetch,
+  requester = requestDemoIllustration,
 }: IllustrationModalProps) {
   const [recipeText, setRecipeText] = useState(defaultRecipeText)
   const [style, setStyle] = useState<IllustrationStyleId>('xiaohei')
@@ -68,23 +59,14 @@ export function IllustrationModal({
     try {
       for (let page = 1; page <= plan.pages.length; page += 1) {
         setStatus(`正在生成第 ${page}/${plan.pages.length} 页…`)
-        const response = await fetcher('/api/illustrate', {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-demo-token': demoToken,
-          },
-          body: JSON.stringify({
-            style,
-            recipeText,
-            page,
-          }),
+        const blob = await requester({
+          style,
+          recipeText,
+          page,
         })
-        if (!response.ok) throw new Error(await readError(response))
-        if (response.headers.get('content-type') !== 'image/png') {
+        if (blob.type !== 'image/png') {
           throw new Error('图片服务返回了未知格式')
         }
-        const blob = await response.blob()
         const url = URL.createObjectURL(blob)
         objectUrls.current.push(url)
         const result = {
@@ -114,12 +96,6 @@ export function IllustrationModal({
       <p className="illustration-intro">
         粘贴含「菜名 / 食材 / 编号步骤」的中文食谱。超过 6 步会自动逐页生成。
       </p>
-
-      {!demoToken && (
-        <div className="illustration-alert" role="alert">
-          演示链接无效或已过期，请重新扫码进入。
-        </div>
-      )}
 
       <div className="illustration-label">选择插画风格</div>
       <div className="illustration-styles">
@@ -153,7 +129,7 @@ export function IllustrationModal({
       <button
         className="illustration-generate"
         type="button"
-        disabled={!demoToken || generating}
+        disabled={generating}
         onClick={() => void generate()}
       >
         {generating ? '正在生成…' : '生成插画'}

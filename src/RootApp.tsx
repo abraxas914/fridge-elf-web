@@ -1,6 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { LandingPage } from './LandingPage'
-import { readDemoToken } from './illustration/demoAccess'
 
 const DemoApp = lazy(() =>
   import('./App').then((module) => ({ default: module.App })),
@@ -12,15 +11,6 @@ function routeFor(pathname: string) {
 
 export function RootApp() {
   const [route, setRoute] = useState(() => routeFor(window.location.pathname))
-
-  useMemo(
-    () =>
-      readDemoToken(
-        new URL(window.location.href),
-        window.sessionStorage,
-      ),
-    [],
-  )
 
   useEffect(() => {
     const syncRoute = () => setRoute(routeFor(window.location.pathname))

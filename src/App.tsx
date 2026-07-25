@@ -26,7 +26,6 @@ import type {
 import type { AddInventoryItem } from './bridge/types'
 import { AppShell } from './components/AppShell'
 import { RECIPES } from './fixtures/goldenFixture'
-import { readDemoToken } from './illustration/demoAccess'
 import { DEFAULT_ILLUSTRATION_RECIPE } from './illustration/demoRecipe'
 import { KitchenScene } from './scenes/KitchenScene'
 import { AddFoodModal } from './scenes/fridge/AddFoodModal'
@@ -108,15 +107,6 @@ export function App({
     reducedMotion:
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
   })
-  const demoToken = useMemo(
-    () =>
-      readDemoToken(
-        new URL(window.location.href),
-        window.sessionStorage,
-      ),
-    [],
-  )
-
   useEffect(() => {
     if (!state.toast) return
     const timer = window.setTimeout(
@@ -346,7 +336,6 @@ export function App({
             content: (
               <IllustrationModal
                 defaultRecipeText={DEFAULT_ILLUSTRATION_RECIPE}
-                demoToken={demoToken}
               />
             ),
           }

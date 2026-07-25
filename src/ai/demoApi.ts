@@ -2,6 +2,7 @@ import type {
   DemoAgentInput,
   DemoAgentResponse,
 } from './types'
+import type { IllustrationStyleId } from '../illustration/recipePlan'
 
 const RETINBOX_HOST = 'fridgeelf.rth1.xyz'
 const VERCEL_BFF_ORIGIN = 'https://fridge-elf-app.vercel.app'
@@ -28,6 +29,12 @@ export interface DemoRequestOptions {
   storage?: StorageLike
   location?: LocationLike
   now?: () => number
+}
+
+export interface DemoIllustrationInput {
+  style: IllustrationStyleId
+  recipeText: string
+  page: number
 }
 
 interface StoredSession {
@@ -181,5 +188,45 @@ export async function requestDemoAgent(
   } catch (error) {
     if (error instanceof DemoApiError) throw error
     throw new DemoApiError('AGENT_UNAVAILABLE')
+  }
+}
+
+export async function requestDemoIllustration(
+  input: DemoIllustrationInput,
+  options: DemoRequestOptions = {},
+) {
+  const fetcher = options.fetcher ?? fetch
+  const location = options.location ?? browserLocation()
+  const token = await getDemoSession(options)
+
+  try {
+    const response = await fetcher(
+      demoApiUrl('/api/illustrate', location),
+      {
+        method: 'POST',
+        headers: {
+          accept: 'image/png',
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(input),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      },
+    )
+    if (!response.ok) {
+      throw new DemoApiError(
+        response.status === 429
+          ? 'DEMO_RATE_LIMITED'
+          : 'IMAGE_UNAVAILABLE',
+        response.status,
+      )
+    }
+    if (response.headers.get('content-type') !== 'image/png') {
+      throw new DemoApiError('IMAGE_UNAVAILABLE')
+    }
+    return await response.blob()
+  } catch (error) {
+    if (error instanceof DemoApiError) throw error
+    throw new DemoApiError('IMAGE_UNAVAILABLE')
   }
 }

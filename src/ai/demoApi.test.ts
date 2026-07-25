@@ -3,6 +3,7 @@ import {
   demoApiUrl,
   getDemoSession,
   requestDemoAgent,
+  requestDemoIllustration,
 } from './demoApi'
 import type { DemoWorldSnapshot } from './types'
 
@@ -109,6 +110,47 @@ describe('browser demo agent API', () => {
       message: '今晚吃什么？',
       snapshot,
     })
+  })
+
+  it('calls the Vercel image BFF from Retinbox with the same session', async () => {
+    const storage = memoryStorage()
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          token: 'opaque-session-token',
+          expiresAt: '2026-07-25T14:00:00.000Z',
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([137, 80, 78, 71]), {
+          headers: { 'content-type': 'image/png' },
+        }),
+      )
+
+    const blob = await requestDemoIllustration(
+      {
+        style: 'xiaohei',
+        recipeText: '# 菜名\n食材：\n- 番茄\n步骤：\n1. 切块。',
+        page: 1,
+      },
+      {
+        fetcher,
+        storage,
+        location: locationFor('https://fridgeelf.rth1.xyz'),
+        now: () => Date.UTC(2026, 6, 25, 12),
+      },
+    )
+
+    expect(blob.type).toBe('image/png')
+    const [url, init] = fetcher.mock.calls[1]
+    expect(url).toBe(
+      'https://fridge-elf-app.vercel.app/api/illustrate',
+    )
+    expect(init.headers.authorization).toBe(
+      'Bearer opaque-session-token',
+    )
+    expect(JSON.parse(init.body).style).toBe('xiaohei')
   })
 
   it('surfaces a stable local error without leaking server payloads', async () => {

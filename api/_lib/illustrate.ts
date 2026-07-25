@@ -4,8 +4,16 @@ import {
   compileRecipePlan,
   isIllustrationStyleId,
 } from '../../src/illustration/recipePlan.js'
+import { demoCorsHeaders, demoJsonError } from './demoCors.js'
+import {
+  verifyDemoSession,
+  type DemoEnvironment,
+} from './demoSession.js'
 
-export interface IllustrationEnvironment {
+export interface IllustrationEnvironment extends DemoEnvironment {
+  HEADLESS_IMAGE_GATEWAY_BASE_URL?: string
+  HEADLESS_IMAGE_GATEWAY_API_KEY?: string
+  HEADLESS_IMAGE_GATEWAY_MODEL?: string
   IMAGE_API_ENDPOINT?: string
   IMAGE_API_KEY?: string
   DEMO_TOKEN_SECRET?: string
@@ -22,18 +30,6 @@ const MAX_RECIPE_LENGTH = 4_000
 const MAX_IMAGE_BYTES = 4_200_000
 const RETRY_DELAYS = [1_000, 3_000] as const
 const ALLOWED_KEYS = ['page', 'recipeText', 'style']
-
-function jsonError(status: number, code: string, message: string) {
-  return Response.json(
-    { error: { code, message } },
-    {
-      status,
-      headers: {
-        'cache-control': 'no-store',
-      },
-    },
-  )
-}
 
 function signature(secret: string, expires: string) {
   return createHmac('sha256', secret).update(expires).digest('base64url')
@@ -66,6 +62,21 @@ function isPng(bytes: Uint8Array) {
   return pngSignature.every((value, index) => bytes[index] === value)
 }
 
+function imageGatewayUrl(baseUrl: string) {
+  const base = baseUrl.replace(/\/+$/, '')
+  if (base.endsWith('/images/generations')) return base
+  return base.endsWith('/v1')
+    ? `${base}/images/generations`
+    : `${base}/v1/images/generations`
+}
+
+function bearerToken(request: Request) {
+  const authorization = request.headers.get('authorization') ?? ''
+  return authorization.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length).trim()
+    : ''
+}
+
 async function parseProviderImage(response: Response) {
   if (!response.ok) return null
   let payload: unknown
@@ -87,6 +98,7 @@ async function generateImage(
   endpoint: string,
   apiKey: string,
   prompt: string,
+  model: string,
   fetcher: Fetcher,
   sleep: (milliseconds: number) => Promise<unknown>,
 ) {
@@ -100,7 +112,7 @@ async function generateImage(
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-image-2',
+          model,
           prompt,
           size: '1024x1536',
           quality: 'auto',
@@ -138,25 +150,61 @@ export async function handleIllustrationRequest(
   sleep: (milliseconds: number) => Promise<unknown> = (milliseconds) =>
     new Promise((resolve) => setTimeout(resolve, milliseconds)),
 ) {
+  const cors = demoCorsHeaders(request)
+  if (!cors) {
+    return demoJsonError(
+      403,
+      'ORIGIN_NOT_ALLOWED',
+      '当前来源无法使用演示服务',
+    )
+  }
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: cors })
+  }
   if (request.method !== 'POST') {
-    return jsonError(405, 'METHOD_NOT_ALLOWED', '仅支持 POST 请求')
+    return demoJsonError(
+      405,
+      'METHOD_NOT_ALLOWED',
+      '仅支持 POST 请求',
+      cors,
+    )
   }
 
-  const tokenSecret = environment.DEMO_TOKEN_SECRET
-  const token = request.headers.get('x-demo-token') ?? ''
-  if (
-    !tokenSecret ||
-    tokenSecret.length < 16 ||
-    !isValidDemoToken(token, tokenSecret)
-  ) {
-    return jsonError(401, 'INVALID_DEMO_TOKEN', '演示链接无效或已过期')
+  const sessionSecret = environment.DEMO_SESSION_SECRET
+  const sessionIsValid =
+    !!sessionSecret &&
+    sessionSecret.length >= 16 &&
+    verifyDemoSession(bearerToken(request), sessionSecret)
+  const legacySecret = environment.DEMO_TOKEN_SECRET
+  const legacyToken = request.headers.get('x-demo-token') ?? ''
+  const legacyTokenIsValid =
+    !!legacySecret &&
+    legacySecret.length >= 16 &&
+    isValidDemoToken(legacyToken, legacySecret)
+  if (!sessionIsValid && !legacyTokenIsValid) {
+    return demoJsonError(
+      401,
+      'DEMO_SESSION_REQUIRED',
+      '演示会话已失效，请刷新后重试',
+      cors,
+    )
   }
 
-  if (!environment.IMAGE_API_KEY) {
-    return jsonError(
+  const imageBaseUrl =
+    environment.HEADLESS_IMAGE_GATEWAY_BASE_URL?.trim() ||
+    environment.IMAGE_API_ENDPOINT?.trim() ||
+    DEFAULT_IMAGE_ENDPOINT
+  const imageApiKey =
+    environment.HEADLESS_IMAGE_GATEWAY_API_KEY?.trim() ||
+    environment.IMAGE_API_KEY?.trim()
+  const imageModel =
+    environment.HEADLESS_IMAGE_GATEWAY_MODEL?.trim() || 'gpt-image-2'
+  if (!imageApiKey) {
+    return demoJsonError(
       503,
       'IMAGE_API_NOT_CONFIGURED',
       '图片服务尚未配置',
+      cors,
     )
   }
 
@@ -164,10 +212,15 @@ export async function handleIllustrationRequest(
   try {
     body = await request.json()
   } catch {
-    return jsonError(400, 'INVALID_JSON', '请求正文必须是 JSON')
+    return demoJsonError(
+      400,
+      'INVALID_JSON',
+      '请求正文必须是 JSON',
+      cors,
+    )
   }
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    return jsonError(400, 'INVALID_BODY', '请求字段不合法')
+    return demoJsonError(400, 'INVALID_BODY', '请求字段不合法', cors)
   }
   const record = body as Record<string, unknown>
   if (
@@ -178,49 +231,55 @@ export async function handleIllustrationRequest(
     record.recipeText.length > MAX_RECIPE_LENGTH ||
     !Number.isInteger(record.page)
   ) {
-    return jsonError(400, 'INVALID_BODY', '风格、食谱正文或页码不合法')
+    return demoJsonError(
+      400,
+      'INVALID_BODY',
+      '风格、食谱正文或页码不合法',
+      cors,
+    )
   }
 
   let plan
   try {
     plan = compileRecipePlan(record.recipeText)
   } catch (error) {
-    return jsonError(
+    return demoJsonError(
       422,
       'INVALID_RECIPE',
       error instanceof Error ? error.message : '无法解析食谱',
+      cors,
     )
   }
   const pageNumber = record.page as number
   if (pageNumber < 1 || pageNumber > plan.pages.length) {
-    return jsonError(400, 'INVALID_PAGE', '页码超出食谱范围')
+    return demoJsonError(400, 'INVALID_PAGE', '页码超出食谱范围', cors)
   }
 
   const prompt = buildIllustrationPrompt(plan, record.style, pageNumber)
   const image = await generateImage(
-    environment.IMAGE_API_ENDPOINT ?? DEFAULT_IMAGE_ENDPOINT,
-    environment.IMAGE_API_KEY,
+    imageGatewayUrl(imageBaseUrl),
+    imageApiKey,
     prompt,
+    imageModel,
     fetcher,
     sleep,
   )
   if (!image) {
-    return jsonError(
+    return demoJsonError(
       502,
       'IMAGE_GENERATION_FAILED',
       '图片生成暂时失败，请稍后重试',
+      cors,
     )
   }
 
+  cors.set('content-length', String(image.byteLength))
+  cors.set('content-type', 'image/png')
+  cors.set('x-content-type-options', 'nosniff')
+  cors.set('x-recipe-page', String(pageNumber))
+  cors.set('x-recipe-pages', String(plan.pages.length))
   return new Response(image, {
     status: 200,
-    headers: {
-      'cache-control': 'no-store',
-      'content-length': String(image.byteLength),
-      'content-type': 'image/png',
-      'x-content-type-options': 'nosniff',
-      'x-recipe-page': String(pageNumber),
-      'x-recipe-pages': String(plan.pages.length),
-    },
+    headers: cors,
   })
 }

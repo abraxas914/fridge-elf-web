@@ -21,12 +21,11 @@ describe('IllustrationModal', () => {
     })
   })
 
-  it('offers four fixed styles and refuses an invalid demo link', () => {
+  it('offers four fixed styles without requiring a signed URL', () => {
     render(
       <IllustrationModal
         defaultRecipeText={RECIPE}
-        demoToken=""
-        fetcher={vi.fn()}
+        requester={vi.fn()}
       />,
     )
 
@@ -34,40 +33,31 @@ describe('IllustrationModal', () => {
     expect(screen.getByRole('button', { name: /水彩厨房/ })).toBeVisible()
     expect(screen.getByRole('button', { name: /亚麻手帖/ })).toBeVisible()
     expect(screen.getByRole('button', { name: /像素涂鸦/ })).toBeVisible()
-    expect(screen.getByText(/演示链接无效/)).toBeVisible()
-    expect(screen.getByRole('button', { name: /生成插画/ })).toBeDisabled()
+    expect(screen.queryByText(/演示链接无效/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /生成插画/ })).toBeEnabled()
   })
 
   it('generates each planned page and renders binary results', async () => {
-    const fetcher = vi.fn().mockResolvedValue(
-      new Response(new Uint8Array([137, 80, 78, 71]), {
-        status: 200,
-        headers: {
-          'content-type': 'image/png',
-          'x-recipe-page': '1',
-          'x-recipe-pages': '1',
-        },
+    const requester = vi.fn().mockResolvedValue(
+      new Blob([new Uint8Array([137, 80, 78, 71])], {
+        type: 'image/png',
       }),
     )
     render(
       <IllustrationModal
         defaultRecipeText={RECIPE}
-        demoToken="valid-token"
-        fetcher={fetcher}
+        requester={requester}
       />,
     )
 
     fireEvent.click(screen.getByRole('button', { name: /水彩厨房/ }))
     fireEvent.click(screen.getByRole('button', { name: /生成插画/ }))
 
-    await waitFor(() => expect(fetcher).toHaveBeenCalledOnce())
-    expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body))).toMatchObject({
+    await waitFor(() => expect(requester).toHaveBeenCalledOnce())
+    expect(requester).toHaveBeenCalledWith({
       style: 'watercolor',
       page: 1,
       recipeText: RECIPE,
-    })
-    expect(fetcher.mock.calls[0][1]?.headers).toMatchObject({
-      'x-demo-token': 'valid-token',
     })
     expect(await screen.findByRole('img', { name: /番茄炒蛋.*第 1 页/ })).toHaveAttribute(
       'src',
@@ -81,11 +71,10 @@ describe('IllustrationModal', () => {
       .mockReturnValueOnce('blob:page-1')
       .mockReturnValueOnce('blob:page-2')
     URL.createObjectURL = createObjectURL
-    const fetcher = vi.fn().mockImplementation(() =>
+    const requester = vi.fn().mockImplementation(() =>
       Promise.resolve(
-        new Response(new Uint8Array([137, 80, 78, 71]), {
-          status: 200,
-          headers: { 'content-type': 'image/png' },
+        new Blob([new Uint8Array([137, 80, 78, 71])], {
+          type: 'image/png',
         }),
       ),
     )
@@ -96,16 +85,15 @@ describe('IllustrationModal', () => {
     render(
       <IllustrationModal
         defaultRecipeText={sevenSteps}
-        demoToken="valid-token"
-        fetcher={fetcher}
+        requester={requester}
       />,
     )
 
     fireEvent.click(screen.getByRole('button', { name: /生成插画/ }))
 
-    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(requester).toHaveBeenCalledTimes(2))
     expect(
-      fetcher.mock.calls.map((call) => JSON.parse(String(call[1]?.body)).page),
+      requester.mock.calls.map((call) => call[0].page),
     ).toEqual([1, 2])
     expect(await screen.findAllByRole('img')).toHaveLength(2)
     expect(URL.revokeObjectURL).not.toHaveBeenCalled()
