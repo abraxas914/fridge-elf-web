@@ -1,3 +1,4 @@
+import { getDefaultResultOrder } from 'node:dns'
 import { describe, expect, it, vi } from 'vitest'
 import {
   handleDemoTranscribeRequest,
@@ -107,6 +108,10 @@ function taskResponse(
 }
 
 describe('anonymous Demo speech transcription BFF', () => {
+  it('prefers IPv4 for DashScope fetches in Node', () => {
+    expect(getDefaultResultOrder()).toBe('ipv4first')
+  })
+
   it('requires POST and the signed anonymous session before upstream IO', async () => {
     const fetcher = vi.fn()
     const unauthorized = await handleDemoTranscribeRequest(

@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto'
+import { setDefaultResultOrder } from 'node:dns'
 import { demoCorsHeaders, demoJsonError } from './demoCors.js'
 import {
   verifyDemoSession,
   type DemoEnvironment,
 } from './demoSession.js'
+
+setDefaultResultOrder('ipv4first')
 
 export interface TranscribeEnvironment extends DemoEnvironment {
   HEADLESS_SPEECH_GATEWAY_BASE_URL?: string
