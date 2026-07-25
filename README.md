@@ -80,7 +80,7 @@
 这个仓库同时承载：
 
 - `/`：面向评委、合作方和体验者的 Landing Page；
-- `/demo`：可直接操作的 Smart Tag 浏览器 Demo；
+- `/demo`：可直接操作的 Fridge Elf 浏览器 Demo；
 - Android 稳定版 Release 信息与 APK 下载入口；
 - 四种菜谱插画风格共用的 `RecipePlan` 与 Image2 服务端调用；
 - Vercel 动态能力与 Retinbox 静态镜像的双端发布。
@@ -145,7 +145,8 @@ DEMO_TOKEN_SECRET=...
 
 - Image2 Key 只能进入本地 `.env.local` 或 Vercel Environment Variables；
 - 密钥不得使用 `VITE_*` 前缀，也不得进入前端 bundle；
-- 浏览器只提交 `{ style, recipeText, page }`，不能提交 raw prompt；
+- 浏览器只提交版本化、结构化的 `RecipeIllustrationRequestV1`，不能提交 raw
+  prompt；服务端仅在迁移期兼容旧请求；
 - 服务端重新编译 `RecipePlan`，每页最多 6 步，固定使用 `gpt-image-2`；
 - 生成结果不写入持久存储；
 - Android 正式应用采用 BYOK，密钥持久化由 Android 工程在本地安全存储中处理，本 Web Demo 不向访客索取密钥。
@@ -159,8 +160,8 @@ DEMO_TOKEN_SECRET=...
 稳定版本使用 `vX.Y.Z` Tag，并包含同名资产：
 
 ```text
-smart-tag-android-vX.Y.Z.apk
-smart-tag-android-vX.Y.Z.apk.sha256
+fridge-elf-android-vX.Y.Z.apk
+fridge-elf-android-vX.Y.Z.apk.sha256
 ```
 
 符合约定的正式 Release 发布后，Vercel Landing Page 最多约 5 分钟更新下载信息。Release 与 APK 的构建、签名仍由 Android 仓库负责，这个 Web 仓库只消费发布结果。

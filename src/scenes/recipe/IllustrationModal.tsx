@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   compileRecipePlan,
+  createRecipeIllustrationRequestV1,
   ILLUSTRATION_STYLES,
   type IllustrationStyleId,
 } from '../../illustration/recipePlan'
@@ -74,11 +75,14 @@ export function IllustrationModal({
             'content-type': 'application/json',
             'x-demo-token': demoToken,
           },
-          body: JSON.stringify({
-            style,
-            recipeText,
-            page,
-          }),
+          body: JSON.stringify(
+            createRecipeIllustrationRequestV1(
+              plan,
+              style,
+              [page],
+              'web-preview-recipe',
+            ),
+          ),
         })
         if (!response.ok) throw new Error(await readError(response))
         if (response.headers.get('content-type') !== 'image/png') {

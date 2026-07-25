@@ -42,7 +42,7 @@ export function parseLatestRelease(payload: unknown): ReleaseInfo {
   const assets = Array.isArray(release.assets)
     ? (release.assets as GitHubAsset[])
     : []
-  const apkName = `smart-tag-android-${tagName}.apk`
+  const apkName = `fridge-elf-android-${tagName}.apk`
   const apk = assets.find((asset) => asset.name === apkName)
   if (
     !apk ||
@@ -60,7 +60,7 @@ export function parseLatestRelease(payload: unknown): ReleaseInfo {
     title:
       typeof release.name === 'string' && release.name.trim()
         ? release.name
-        : `Smart Tag ${tagName}`,
+        : `Fridge Elf ${tagName}`,
     publishedAt:
       typeof release.published_at === 'string'
         ? release.published_at

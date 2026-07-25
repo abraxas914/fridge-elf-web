@@ -1,8 +1,10 @@
 export type IllustrationStyleId =
   | 'xiaohei'
-  | 'watercolor'
+  | 'pixel-person'
   | 'linen-zine'
-  | 'pixel-doodle'
+  | 'watercolor-kitchen'
+
+export type LegacyIllustrationStyleId = 'watercolor' | 'pixel-doodle'
 
 export interface IllustrationStyle {
   id: IllustrationStyleId
@@ -51,6 +53,28 @@ export interface RecipePlan {
   pages: RecipePage[]
 }
 
+export interface RecipeIllustrationRecipeV1 {
+  id: string
+  title: string
+  servings?: string
+  ingredients: Array<{ name: string; amount?: string }>
+  steps: Array<{
+    order: number
+    action: string
+    target?: string
+    time?: string
+    heat?: string
+    doneness?: string
+  }>
+}
+
+export interface RecipeIllustrationRequestV1 {
+  contractVersion: 1
+  recipe: RecipeIllustrationRecipeV1
+  styleId: IllustrationStyleId
+  pageIndexes?: number[]
+}
+
 export const ILLUSTRATION_STYLES: readonly IllustrationStyle[] = [
   {
     id: 'xiaohei',
@@ -65,17 +89,17 @@ export const ILLUSTRATION_STYLES: readonly IllustrationStyle[] = [
       'Pure white background. Minimalist black thin slightly wobbly hand-drawn lines, sparse gray hatching only, deadpan humor, generous whitespace. Black and white only. No color, paper texture, shadow, gradient, realistic kitchen, PPT boxes, cards, or infographic chrome.',
   },
   {
-    id: 'watercolor',
-    name: '水彩厨房',
-    englishName: 'WATERCOLOR',
-    description: '温暖水彩 · 小刺猬',
-    characterName: 'Xiaoci',
+    id: 'pixel-person',
+    name: '像素小人',
+    englishName: 'PIXEL PERSON',
+    description: '五色像素 · 小厨师',
+    characterName: 'Pixel Cook',
     characterLabel:
-      'small round hedgehog Xiaoci in olive-brown ink, soft watercolor fill, dot eyes and tiny paws',
+      'small clearly human pixel cook with a human head, torso, two arms, two legs and hands',
     layoutPrompt:
-      'Step cells have organic irregular boundaries made by soft watercolor wash blobs, never geometric rectangles. Connect them with thin curved dotted olive-brown arrows.',
+      'Use precise 16px rounded cells filled #F0F0F0 with 24px gutters. Connect them with straight segments and 90-degree bends in #2D2D2D.',
     visualPrompt:
-      'Light cream background #FDF6EC with barely visible paper grain. Warm olive-brown #7A6B4E loose ink lines. Soft watercolor washes: sage #A8C5A0, coral #E8A895, and warm gold #D4B776. The completed dish is the richest watercolor element. No flat vector icons, geometric grid, bold blocks, or commercial poster styling.',
+      'Pure white #FFFFFF background. Clean flat vector pixel-doodle style with uniform 2–3px #2D2D2D lines. Strict five-color palette only: #2D2D2D, #FF6B35, #4ECDC4, #FFE0D6, #F0F0F0. No horse, animal, mascot, furry, tail, muzzle, paw, claw or hoof traits. No gradients, shadows, perspective, watercolor, texture, or extra colors. At most 2–3 tiny pixel decorations.',
   },
   {
     id: 'linen-zine',
@@ -91,17 +115,17 @@ export const ILLUSTRATION_STYLES: readonly IllustrationStyle[] = [
       'Flat light cream #FDF6EC background with no visible texture. Confident consistent deep caramel #4A3D2A lines. Sage #A8C5A0, coral #E8A895, and warm gold #D4B776 accents. Flat ingredient silhouettes and a bold poster-like completed dish. No watercolor, grain, gradients, shadows, or floating decoration.',
   },
   {
-    id: 'pixel-doodle',
-    name: '像素涂鸦',
-    englishName: 'PIXEL DOODLE',
-    description: '五色像素 · 小马动作',
-    characterName: 'Xiaoma',
+    id: 'watercolor-kitchen',
+    name: '水彩厨房',
+    englishName: 'WATERCOLOR',
+    description: '温暖水彩 · 小刺猬',
+    characterName: 'Xiaoci',
     characterLabel:
-      'small geometric pixel horse Xiaoma with orange blocky body, white eyes, triangle ears and short tail',
+      'small round hedgehog Xiaoci in olive-brown ink, soft watercolor fill, dot eyes and tiny paws',
     layoutPrompt:
-      'Use precise 16px rounded cells filled #F0F0F0 with 24px gutters. Connect them with straight segments and 90-degree bends in #2D2D2D.',
+      'Step cells have organic irregular boundaries made by soft watercolor wash blobs, never geometric rectangles. Connect them with thin curved dotted olive-brown arrows.',
     visualPrompt:
-      'Pure white #FFFFFF background. Clean flat vector pixel-doodle style with uniform 2–3px #2D2D2D lines. Strict five-color palette only: #2D2D2D, #FF6B35, #4ECDC4, #FFE0D6, #F0F0F0. No gradients, shadows, perspective, watercolor, texture, or extra colors. At most 2–3 tiny pixel decorations.',
+      'Light cream background #FDF6EC with barely visible paper grain. Warm olive-brown #7A6B4E loose ink lines. Soft watercolor washes: sage #A8C5A0, coral #E8A895, and warm gold #D4B776. The completed dish is the richest watercolor element. No flat vector icons, geometric grid, bold blocks, or commercial poster styling.',
   },
 ] as const
 
@@ -277,6 +301,132 @@ export function isIllustrationStyleId(
   value: unknown,
 ): value is IllustrationStyleId {
   return typeof value === 'string' && STYLE_BY_ID.has(value as IllustrationStyleId)
+}
+
+export function normalizeIllustrationStyleId(
+  value: unknown,
+): IllustrationStyleId | null {
+  if (isIllustrationStyleId(value)) return value
+  if (value === 'watercolor') return 'watercolor-kitchen'
+  if (value === 'pixel-doodle') return 'pixel-person'
+  return null
+}
+
+export function createRecipeIllustrationRequestV1(
+  plan: RecipePlan,
+  styleId: IllustrationStyleId,
+  pageIndexes: number[],
+  recipeId = 'web-preview-recipe',
+): RecipeIllustrationRequestV1 {
+  return {
+    contractVersion: 1,
+    recipe: {
+      id: recipeId,
+      title: plan.title,
+      ...(plan.servings ? { servings: plan.servings } : {}),
+      ingredients: plan.ingredients.map(({ name, amount }) => ({
+        name,
+        ...(amount ? { amount } : {}),
+      })),
+      steps: plan.steps.map(
+        ({ order, action, target, time, heat, doneness }) => ({
+          order,
+          action,
+          ...(target ? { target } : {}),
+          ...(time ? { time } : {}),
+          ...(heat ? { heat } : {}),
+          ...(doneness ? { doneness } : {}),
+        }),
+      ),
+    },
+    styleId,
+    pageIndexes,
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function requiredString(
+  record: Record<string, unknown>,
+  key: string,
+  maxLength: number,
+) {
+  const value = record[key]
+  if (
+    typeof value !== 'string' ||
+    value.trim().length === 0 ||
+    value.length > maxLength
+  ) {
+    throw new Error(`食谱字段 ${key} 无效`)
+  }
+  return value.trim()
+}
+
+function optionalString(
+  record: Record<string, unknown>,
+  key: string,
+  maxLength: number,
+) {
+  const value = record[key]
+  if (value === undefined) return ''
+  if (typeof value !== 'string' || value.length > maxLength) {
+    throw new Error(`食谱字段 ${key} 无效`)
+  }
+  return value.trim()
+}
+
+export function buildRecipePlanFromStructuredRecipe(
+  value: unknown,
+): RecipePlan {
+  if (!isRecord(value)) throw new Error('结构化食谱无效')
+  requiredString(value, 'id', 128)
+  const title = requiredString(value, 'title', 12)
+  const servings = optionalString(value, 'servings', 64)
+  if (
+    !Array.isArray(value.ingredients) ||
+    value.ingredients.length < 1 ||
+    value.ingredients.length > 100
+  ) {
+    throw new Error('食材列表无效')
+  }
+  if (
+    !Array.isArray(value.steps) ||
+    value.steps.length < 1 ||
+    value.steps.length > 72
+  ) {
+    throw new Error('步骤列表无效')
+  }
+
+  const ingredients = value.ingredients.map((item) => {
+    if (!isRecord(item)) throw new Error('食材条目无效')
+    return {
+      name: requiredString(item, 'name', 64),
+      amount: optionalString(item, 'amount', 64),
+    }
+  })
+  const steps = value.steps.map((item, index) => {
+    if (!isRecord(item) || item.order !== index + 1) {
+      throw new Error('食谱步骤必须从 1 开始连续递增')
+    }
+    return {
+      order: index + 1,
+      action: requiredString(item, 'action', 500),
+      target: optionalString(item, 'target', 500),
+      time: optionalString(item, 'time', 100),
+      heat: optionalString(item, 'heat', 100),
+      doneness: optionalString(item, 'doneness', 100),
+    }
+  })
+  const plan: RecipePlan = {
+    title,
+    ingredients: compressIngredients(ingredients),
+    steps,
+    pages: buildPages(title, steps),
+  }
+  if (servings) plan.servings = servings
+  return plan
 }
 
 export function buildIllustrationPrompt(

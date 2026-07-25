@@ -33,7 +33,7 @@ describe('IllustrationModal', () => {
     expect(screen.getByRole('button', { name: /小黑手绘/ })).toBeVisible()
     expect(screen.getByRole('button', { name: /水彩厨房/ })).toBeVisible()
     expect(screen.getByRole('button', { name: /亚麻手帖/ })).toBeVisible()
-    expect(screen.getByRole('button', { name: /像素涂鸦/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: /像素小人/ })).toBeVisible()
     expect(screen.getByText(/演示链接无效/)).toBeVisible()
     expect(screen.getByRole('button', { name: /生成插画/ })).toBeDisabled()
   })
@@ -62,9 +62,16 @@ describe('IllustrationModal', () => {
 
     await waitFor(() => expect(fetcher).toHaveBeenCalledOnce())
     expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body))).toMatchObject({
-      style: 'watercolor',
-      page: 1,
-      recipeText: RECIPE,
+      contractVersion: 1,
+      recipe: {
+        title: '番茄炒蛋',
+        ingredients: [
+          { name: '番茄', amount: '2个' },
+          { name: '鸡蛋', amount: '3个' },
+        ],
+      },
+      styleId: 'watercolor-kitchen',
+      pageIndexes: [1],
     })
     expect(fetcher.mock.calls[0][1]?.headers).toMatchObject({
       'x-demo-token': 'valid-token',
@@ -105,8 +112,10 @@ describe('IllustrationModal', () => {
 
     await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2))
     expect(
-      fetcher.mock.calls.map((call) => JSON.parse(String(call[1]?.body)).page),
-    ).toEqual([1, 2])
+      fetcher.mock.calls.map(
+        (call) => JSON.parse(String(call[1]?.body)).pageIndexes,
+      ),
+    ).toEqual([[1], [2]])
     expect(await screen.findAllByRole('img')).toHaveLength(2)
     expect(URL.revokeObjectURL).not.toHaveBeenCalled()
   })

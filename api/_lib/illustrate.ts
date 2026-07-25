@@ -1,8 +1,12 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import {
+  buildRecipePlanFromStructuredRecipe,
   buildIllustrationPrompt,
   compileRecipePlan,
   isIllustrationStyleId,
+  normalizeIllustrationStyleId,
+  type IllustrationStyleId,
+  type RecipePlan,
 } from '../../src/illustration/recipePlan.js'
 
 export interface IllustrationEnvironment {
@@ -21,7 +25,13 @@ const DEFAULT_IMAGE_ENDPOINT =
 const MAX_RECIPE_LENGTH = 4_000
 const MAX_IMAGE_BYTES = 4_200_000
 const RETRY_DELAYS = [1_000, 3_000] as const
-const ALLOWED_KEYS = ['page', 'recipeText', 'style']
+const V1_ALLOWED_KEYS = [
+  'contractVersion',
+  'pageIndexes',
+  'recipe',
+  'styleId',
+]
+const LEGACY_ALLOWED_KEYS = ['page', 'recipeText', 'style']
 
 function jsonError(status: number, code: string, message: string) {
   return Response.json(
@@ -33,6 +43,57 @@ function jsonError(status: number, code: string, message: string) {
       },
     },
   )
+}
+
+interface ParsedIllustrationRequest {
+  plan: RecipePlan
+  styleId: IllustrationStyleId
+  pageNumber: number
+}
+
+function hasExactKeys(record: Record<string, unknown>, keys: string[]) {
+  return Object.keys(record).sort().join(',') === keys.join(',')
+}
+
+function parseIllustrationBody(
+  record: Record<string, unknown>,
+): ParsedIllustrationRequest {
+  if (hasExactKeys(record, V1_ALLOWED_KEYS)) {
+    if (
+      record.contractVersion !== 1 ||
+      !isIllustrationStyleId(record.styleId) ||
+      !Array.isArray(record.pageIndexes) ||
+      record.pageIndexes.length !== 1 ||
+      !Number.isInteger(record.pageIndexes[0])
+    ) {
+      throw new Error('契约版本、风格或页码不合法')
+    }
+    return {
+      plan: buildRecipePlanFromStructuredRecipe(record.recipe),
+      styleId: record.styleId,
+      pageNumber: record.pageIndexes[0] as number,
+    }
+  }
+
+  if (hasExactKeys(record, LEGACY_ALLOWED_KEYS)) {
+    const styleId = normalizeIllustrationStyleId(record.style)
+    if (
+      !styleId ||
+      typeof record.recipeText !== 'string' ||
+      record.recipeText.length === 0 ||
+      record.recipeText.length > MAX_RECIPE_LENGTH ||
+      !Number.isInteger(record.page)
+    ) {
+      throw new Error('旧版风格、食谱正文或页码不合法')
+    }
+    return {
+      plan: compileRecipePlan(record.recipeText),
+      styleId,
+      pageNumber: record.page as number,
+    }
+  }
+
+  throw new Error('请求字段不符合 Fridge Elf V1 契约')
 }
 
 function signature(secret: string, expires: string) {
@@ -170,33 +231,22 @@ export async function handleIllustrationRequest(
     return jsonError(400, 'INVALID_BODY', '请求字段不合法')
   }
   const record = body as Record<string, unknown>
-  if (
-    Object.keys(record).sort().join(',') !== ALLOWED_KEYS.join(',') ||
-    !isIllustrationStyleId(record.style) ||
-    typeof record.recipeText !== 'string' ||
-    record.recipeText.length === 0 ||
-    record.recipeText.length > MAX_RECIPE_LENGTH ||
-    !Number.isInteger(record.page)
-  ) {
-    return jsonError(400, 'INVALID_BODY', '风格、食谱正文或页码不合法')
-  }
-
-  let plan
+  let parsed: ParsedIllustrationRequest
   try {
-    plan = compileRecipePlan(record.recipeText)
+    parsed = parseIllustrationBody(record)
   } catch (error) {
     return jsonError(
-      422,
-      'INVALID_RECIPE',
-      error instanceof Error ? error.message : '无法解析食谱',
+      400,
+      'INVALID_BODY',
+      error instanceof Error ? error.message : '请求字段不合法',
     )
   }
-  const pageNumber = record.page as number
+  const { plan, styleId, pageNumber } = parsed
   if (pageNumber < 1 || pageNumber > plan.pages.length) {
     return jsonError(400, 'INVALID_PAGE', '页码超出食谱范围')
   }
 
-  const prompt = buildIllustrationPrompt(plan, record.style, pageNumber)
+  const prompt = buildIllustrationPrompt(plan, styleId, pageNumber)
   const image = await generateImage(
     environment.IMAGE_API_ENDPOINT ?? DEFAULT_IMAGE_ENDPOINT,
     environment.IMAGE_API_KEY,
@@ -219,6 +269,7 @@ export async function handleIllustrationRequest(
       'content-length': String(image.byteLength),
       'content-type': 'image/png',
       'x-content-type-options': 'nosniff',
+      'x-fridge-elf-contract': '1',
       'x-recipe-page': String(pageNumber),
       'x-recipe-pages': String(plan.pages.length),
     },
