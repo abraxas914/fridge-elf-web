@@ -1,0 +1,5 @@
+**/*.test.ts
+**/*.test.tsx
+tests/
+test-results/
+playwright-report/
