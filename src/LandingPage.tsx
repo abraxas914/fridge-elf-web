@@ -6,6 +6,7 @@ import { FridgeShelfSvg } from './landing/illustrations/FridgeShelfSvg'
 import { HomeScenesSvg } from './landing/illustrations/HomeScenesSvg'
 import { LifecycleSvg } from './landing/illustrations/LifecycleSvg'
 import { MultimodalSvg } from './landing/illustrations/MultimodalSvg'
+import { RecipeShowcase } from './landing/RecipeShowcaseSection'
 import { formatApkSize, type ReleaseInfo } from './release/release'
 import './LandingPage.css'
 
@@ -294,6 +295,8 @@ export function LandingPage({
           </article>
         ))}
       </section>
+
+      <RecipeShowcase onOpenDemo={onOpenDemo} />
 
       <LandingSection
         className="landing-physical-data"

@@ -96,9 +96,21 @@ describe('LandingPage', () => {
       }),
     ).toBeVisible()
     expect(
+      screen.getByRole('heading', {
+        name: '把做饭这件事，画得更简单。',
+      }),
+    ).toBeVisible()
+    expect(screen.getByText('从食材到上桌，一眼看懂。')).toBeVisible()
+    expect(screen.getByRole('link', { name: '开始制作' })).toHaveAttribute(
+      'href',
+      '/demo',
+    )
+    expect(
       screen.queryByText(/T5AI|Android、Wi-Fi|MQTT|DashScope/),
     ).not.toBeInTheDocument()
-    expect(document.body).not.toHaveTextContent('Smart Tag')
+    expect(document.body).not.toHaveTextContent(
+      /Smart Tag|风格|Skill|小黑/,
+    )
   })
 
   it('links the long-form story through product-level section navigation', () => {
