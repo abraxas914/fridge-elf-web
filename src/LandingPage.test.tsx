@@ -83,4 +83,28 @@ describe('LandingPage', () => {
       screen.queryByText(/T5AI|Android、Wi-Fi|MQTT|DashScope/),
     ).not.toBeInTheDocument()
   })
+
+  it('links the long-form story through product-level section navigation', () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      Response.json({ error: { message: '暂无正式版本' } }, { status: 404 }),
+    )
+
+    render(<LandingPage fetcher={fetcher} />)
+
+    const destinations = [
+      ['食材的一生', '#lifecycle'],
+      ['家庭 IoT', '#iot'],
+      ['多模态', '#multimodal'],
+      ['为什么', '#why'],
+      ['体验', '#experience'],
+    ]
+
+    for (const [name, href] of destinations) {
+      expect(screen.getAllByRole('link', { name })).not.toHaveLength(0)
+      expect(screen.getAllByRole('link', { name })[0]).toHaveAttribute(
+        'href',
+        href,
+      )
+    }
+  })
 })

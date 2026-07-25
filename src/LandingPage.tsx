@@ -1,6 +1,15 @@
 import { useEffect, useState, type MouseEvent } from 'react'
+import { LandingSection } from './landing/LandingSection'
 import { formatApkSize, type ReleaseInfo } from './release/release'
 import './LandingPage.css'
+
+const navigation = [
+  ['lifecycle', '食材的一生'],
+  ['iot', '家庭 IoT'],
+  ['multimodal', '多模态'],
+  ['why', '为什么'],
+  ['experience', '体验'],
+] as const
 
 const lifecycleSteps = [
   ['01', '买回家', '新食材进入家庭'],
@@ -102,11 +111,26 @@ export function LandingPage({
             <small>EVERYDAY THINGS · QUIETLY REMEMBERED</small>
           </span>
         </a>
+        <nav className="landing-header-nav" aria-label="产品介绍章节">
+          {navigation.map(([id, label]) => (
+            <a href={`#${id}`} key={id}>
+              {label}
+            </a>
+          ))}
+        </nav>
         <span className="landing-status">
           <i aria-hidden="true" />
           DEMO ONLINE
         </span>
       </header>
+
+      <nav className="landing-progress" aria-label="页面章节">
+        {navigation.map(([id, label], index) => (
+          <a href={`#${id}`} aria-label={label} key={id}>
+            <span>{String(index + 1).padStart(2, '0')}</span>
+          </a>
+        ))}
+      </nav>
 
       <section className="landing-hero" aria-labelledby="landing-hero-title">
         <div className="landing-copy">
@@ -132,7 +156,10 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="landing-problem" aria-labelledby="problem-title">
+      <LandingSection
+        className="landing-problem"
+        labelledBy="problem-title"
+      >
         <div className="landing-section-copy">
           <p className="landing-kicker">一些很普通、也很常见的时刻</p>
           <h2 id="problem-title">
@@ -148,12 +175,13 @@ export function LandingPage({
           <li>出门后无法确认</li>
           <li>临期时没有提醒</li>
         </ul>
-      </section>
+      </LandingSection>
 
-      <section
+      <LandingSection
         className="landing-lifecycle"
         id="lifecycle"
-        aria-labelledby="lifecycle-title"
+        labelledBy="lifecycle-title"
+        snap
       >
         <div className="landing-section-copy">
           <p className="landing-kicker">FOOD LIFECYCLE</p>
@@ -176,9 +204,13 @@ export function LandingPage({
         <p className="landing-section-note">
           这是食材的完整生命周期，也是一份会继续流动的数据。
         </p>
-      </section>
+      </LandingSection>
 
-      <section className="landing-iot" id="iot" aria-labelledby="iot-title">
+      <LandingSection
+        className="landing-iot"
+        id="iot"
+        labelledBy="iot-title"
+      >
         <div className="landing-section-copy">
           <p className="landing-kicker">HOME AIoT · ONE SHARED INVENTORY</p>
           <h2 id="iot-title">冰箱旁和手机上，始终是同一份库存。</h2>
@@ -193,12 +225,12 @@ export function LandingPage({
           <li>实时同步</li>
           <li>家庭共享库存</li>
         </ul>
-      </section>
+      </LandingSection>
 
-      <section
+      <LandingSection
         className="landing-multimodal"
         id="multimodal"
-        aria-labelledby="multimodal-title"
+        labelledBy="multimodal-title"
       >
         <div className="landing-section-copy">
           <p className="landing-kicker">VOICE · VISION · TOUCH · TEXT</p>
@@ -227,7 +259,7 @@ export function LandingPage({
             <dd>在手机上完整编辑、搜索与规划</dd>
           </div>
         </dl>
-      </section>
+      </LandingSection>
 
       <section className="landing-capabilities" aria-label="核心能力">
         {capabilities.map((capability) => (
@@ -239,10 +271,11 @@ export function LandingPage({
         ))}
       </section>
 
-      <section
+      <LandingSection
         className="landing-physical-data"
         id="why"
-        aria-labelledby="physical-data-title"
+        labelledBy="physical-data-title"
+        snap
       >
         <p className="landing-kicker">PHYSICAL DATA AT HOME</p>
         <h2 id="physical-data-title">
@@ -256,11 +289,11 @@ export function LandingPage({
             冰箱精灵关心的并不只是一张库存清单。它想让真实物品在进入和离开时留下信息，让家庭中的实体数据也能被看见、被理解，并在下一次做饭或采购时继续发挥作用。
           </p>
         </div>
-      </section>
+      </LandingSection>
 
-      <section
+      <LandingSection
         className="landing-ubiquitous"
-        aria-labelledby="ubiquitous-title"
+        labelledBy="ubiquitous-title"
       >
         <div className="landing-section-copy">
           <p className="landing-kicker">UBIQUITOUS AI · A QUIET INTERFACE</p>
@@ -277,12 +310,13 @@ export function LandingPage({
           <li>衣柜 · 衣物</li>
           <li>药柜 · 药品</li>
         </ul>
-      </section>
+      </LandingSection>
 
-      <section
+      <LandingSection
         className="landing-experience"
         id="experience"
-        aria-labelledby="experience-title"
+        labelledBy="experience-title"
+        snap
       >
         <section className="landing-release pixel-card" aria-label="最新版本">
           <div>
@@ -355,7 +389,7 @@ export function LandingPage({
             ) : null}
           </div>
         </div>
-      </section>
+      </LandingSection>
 
       <footer className="landing-footer">
         <span>FRIDGE ELF · ADVX 2026</span>
