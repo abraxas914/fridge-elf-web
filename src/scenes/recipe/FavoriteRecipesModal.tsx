@@ -21,6 +21,7 @@ const blankRecipe = (): SavedRecipe => ({
   need: [],
   desc: '',
   steps: [],
+  source: 'user',
 })
 
 export function FavoriteRecipesModal(props: FavoriteRecipesModalProps) {

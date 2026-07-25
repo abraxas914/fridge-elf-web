@@ -255,6 +255,7 @@ export function App({
       need: [...recipe.availableIngredients, ...recipe.missingIngredients],
       desc: recipe.reason,
       steps: recipe.steps,
+      source: 'assistant',
     })
   }, [saveFavoriteRecipe])
 
