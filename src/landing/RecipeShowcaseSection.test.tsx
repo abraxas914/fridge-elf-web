@@ -23,6 +23,8 @@ describe('RecipeShowcase', () => {
   it('uses responsive, complete recipe images with neutral paths', () => {
     render(<RecipeShowcase />)
 
+    const dishNames = ['酸辣土豆丝', '香菇青菜', '宫保鸡丁', '鸡蛋饼']
+
     screen.getAllByRole('img').forEach((image, index) => {
       expect(image).toHaveAttribute(
         'src',
@@ -36,7 +38,7 @@ describe('RecipeShowcase', () => {
       expect(image).toHaveAttribute('height', '1440')
       expect(image).toHaveAttribute(
         'alt',
-        `番茄炒蛋食谱插画示例 ${index + 1}`,
+        `${dishNames[index]}食谱插画示例`,
       )
     })
   })
@@ -47,7 +49,7 @@ describe('RecipeShowcase', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: '查看番茄炒蛋食谱插画示例 4',
+        name: '查看鸡蛋饼食谱插画示例',
       }),
     )
     expect(screen.getByTestId('recipe-showcase-image-4')).toHaveAttribute(

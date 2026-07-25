@@ -11,6 +11,13 @@ import './RecipeShowcase.css'
 const getRetinaSource = (source: string) =>
   source.replace(/\.webp$/, '@2x.webp')
 
+const recipeShowcaseDishNames = [
+  '酸辣土豆丝',
+  '香菇青菜',
+  '宫保鸡丁',
+  '鸡蛋饼',
+] as const
+
 const prefersStaticShowcase = () => {
   if (typeof window.matchMedia !== 'function') return false
   return (
@@ -101,7 +108,7 @@ export function RecipeShowcase({
               <button
                 type="button"
                 key={index}
-                aria-label={`查看番茄炒蛋食谱插画示例 ${index + 1}`}
+                aria-label={`查看${recipeShowcaseDishNames[index]}食谱插画示例`}
                 aria-pressed={activeIndex === index}
                 onClick={() => setActiveIndex(index)}
               />
@@ -126,7 +133,7 @@ export function RecipeShowcase({
                 height="1440"
                 loading="lazy"
                 decoding="async"
-                alt={`番茄炒蛋食谱插画示例 ${index + 1}`}
+                alt={`${recipeShowcaseDishNames[index]}食谱插画示例`}
               />
             </figure>
           ))}
