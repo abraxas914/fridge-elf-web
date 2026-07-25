@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { DeviceSyncSvg } from './DeviceSyncSvg'
 import { FridgeHeroSvg } from './FridgeHeroSvg'
 import { FridgeShelfSvg } from './FridgeShelfSvg'
+import { HomeScenesSvg } from './HomeScenesSvg'
 import { LifecycleSvg } from './LifecycleSvg'
 import { MultimodalSvg } from './MultimodalSvg'
 
@@ -49,6 +50,16 @@ describe('landing illustrations', () => {
     expect(
       screen.getByRole('img', {
         name: '语音视觉触摸和文字共同完成食材录入',
+      }),
+    ).toBeVisible()
+  })
+
+  it('describes the same quiet interface across home scenes', () => {
+    render(<HomeScenesSvg />)
+
+    expect(
+      screen.getByRole('img', {
+        name: '同一个安静的家庭入口可以来到冰箱衣柜和药柜旁',
       }),
     ).toBeVisible()
   })

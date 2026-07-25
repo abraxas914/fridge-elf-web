@@ -3,6 +3,7 @@ import { LandingSection } from './landing/LandingSection'
 import { DeviceSyncSvg } from './landing/illustrations/DeviceSyncSvg'
 import { FridgeHeroSvg } from './landing/illustrations/FridgeHeroSvg'
 import { FridgeShelfSvg } from './landing/illustrations/FridgeShelfSvg'
+import { HomeScenesSvg } from './landing/illustrations/HomeScenesSvg'
 import { LifecycleSvg } from './landing/illustrations/LifecycleSvg'
 import { MultimodalSvg } from './landing/illustrations/MultimodalSvg'
 import { formatApkSize, type ReleaseInfo } from './release/release'
@@ -327,6 +328,9 @@ export function LandingPage({
           <li>衣柜 · 衣物</li>
           <li>药柜 · 药品</li>
         </ul>
+        <div className="landing-home-scenes-visual">
+          <HomeScenesSvg />
+        </div>
       </LandingSection>
 
       <LandingSection
