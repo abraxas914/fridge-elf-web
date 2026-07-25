@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { networkDiagnostics } from '../diagnostics/networkDiagnostics'
 import {
   demoApiUrl,
   getDemoSession,
+  probeDemoSession,
   requestDemoAgent,
   requestDemoIllustration,
   requestDemoTranscription,
@@ -29,6 +31,11 @@ function memoryStorage() {
 }
 
 describe('browser demo agent API', () => {
+  afterEach(() => {
+    networkDiagnostics.clear()
+    window.history.replaceState({}, '', '/')
+  })
+
   it('uses same-origin APIs on Vercel and local development', () => {
     expect(
       demoApiUrl('/api/demo/session', locationFor('https://fridge-elf-app.vercel.app')),
@@ -70,6 +77,30 @@ describe('browser demo agent API', () => {
       'https://fridge-elf-app.vercel.app/api/demo/session',
       expect.objectContaining({ method: 'POST' }),
     )
+    const headers = new Headers(fetcher.mock.calls[0]?.[1]?.headers)
+    expect(headers.get('x-request-id')).toMatch(
+      /^[A-Za-z0-9_-]{8,80}$/,
+    )
+  })
+
+  it('probes a fresh session without returning or storing its token', async () => {
+    const storage = memoryStorage()
+    const fetcher = vi.fn().mockResolvedValue(
+      Response.json({
+        token: 'probe-only-token',
+        expiresAt: '2026-07-25T14:00:00.000Z',
+      }),
+    )
+
+    await expect(
+      probeDemoSession({
+        fetcher,
+        storage,
+        location: locationFor('https://fridgeelf.rth1.xyz'),
+        now: () => Date.UTC(2026, 6, 25, 12),
+      }),
+    ).resolves.toEqual({ ok: true, status: 200 })
+    expect(storage.getItem('fridge-elf-demo-session-v1')).toBeNull()
   })
 
   it('calls Agent with the anonymous bearer token and bounded snapshot', async () => {
@@ -106,6 +137,9 @@ describe('browser demo agent API', () => {
     )
     expect(init.headers.authorization).toBe(
       'Bearer opaque-session-token',
+    )
+    expect(new Headers(init.headers).get('x-request-id')).toMatch(
+      /^[A-Za-z0-9_-]{8,80}$/,
     )
     expect(JSON.parse(init.body)).toEqual({
       message: '今晚吃什么？',
@@ -261,10 +295,12 @@ describe('browser demo agent API', () => {
     [429, 'DEMO_RATE_LIMITED'],
     [502, 'TRANSCRIPTION_UNAVAILABLE'],
   ])(
-    'maps transcription HTTP %s without reading server details',
+    'maps transcription HTTP %s without exposing server details',
     async (status, code) => {
       const storage = memoryStorage()
-      const json = vi.fn()
+      const json = vi.fn().mockResolvedValue({
+        error: { code, message: 'provider secret' },
+      })
       const fetcher = vi.fn()
         .mockResolvedValueOnce(
           Response.json({
@@ -296,7 +332,7 @@ describe('browser demo agent API', () => {
         status,
         message: 'Demo AI service unavailable',
       })
-      expect(json).not.toHaveBeenCalled()
+      expect(json).toHaveBeenCalledOnce()
     },
   )
 
@@ -328,12 +364,19 @@ describe('browser demo agent API', () => {
         },
       ),
     ).rejects.toMatchObject({
-      code: 'TRANSCRIPTION_UNAVAILABLE',
+      code: 'RESPONSE_INVALID',
     })
   })
 
-  it('uses a dedicated 135 second transcription timeout', async () => {
-    const timeout = vi.spyOn(AbortSignal, 'timeout')
+  it('works when AbortSignal.timeout is unavailable', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      AbortSignal,
+      'timeout',
+    )
+    Object.defineProperty(AbortSignal, 'timeout', {
+      configurable: true,
+      value: undefined,
+    })
     try {
       const storage = memoryStorage()
       const fetcher = vi.fn()
@@ -357,12 +400,91 @@ describe('browser demo agent API', () => {
           now: () => Date.UTC(2026, 6, 25, 12),
         },
       )
-
-      expect(timeout).toHaveBeenNthCalledWith(1, 50_000)
-      expect(timeout).toHaveBeenNthCalledWith(2, 135_000)
+      expect(fetcher).toHaveBeenCalledTimes(2)
     } finally {
-      timeout.mockRestore()
+      if (descriptor) {
+        Object.defineProperty(AbortSignal, 'timeout', descriptor)
+      } else {
+        Reflect.deleteProperty(AbortSignal, 'timeout')
+      }
     }
+  })
+
+  it('preserves an allowlisted server code and response request ID', async () => {
+    const storage = memoryStorage()
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          token: 'opaque-session-token',
+          expiresAt: '2026-07-25T14:00:00.000Z',
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json(
+          {
+            error: {
+              code: 'DEMO_RATE_LIMITED',
+              message: '今天来访的人有点多',
+            },
+          },
+          {
+            status: 429,
+            headers: { 'x-request-id': 'mobile-request-123' },
+          },
+        ),
+      )
+
+    await expect(
+      requestDemoAgent(
+        { mode: 'agent', message: '今晚吃什么？', snapshot },
+        {
+          fetcher,
+          storage,
+          location: locationFor(
+            'https://fridge-elf-app.vercel.app',
+          ),
+          now: () => Date.UTC(2026, 6, 25, 12),
+        },
+      ),
+    ).rejects.toMatchObject({
+      name: 'DemoApiError',
+      code: 'DEMO_RATE_LIMITED',
+      status: 429,
+      requestId: 'mobile-request-123',
+    })
+  })
+
+  it('records redacted diagnostics without bearer tokens or request bodies', async () => {
+    window.history.replaceState({}, '', '/demo?debug=network')
+    const storage = memoryStorage()
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          token: 'opaque-session-token',
+          expiresAt: '2026-07-25T14:00:00.000Z',
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({ answer: '先吃番茄。' }),
+      )
+
+    await requestDemoAgent(
+      { mode: 'agent', message: '今晚吃什么？', snapshot },
+      {
+        fetcher,
+        storage,
+        location: locationFor(
+          'https://fridge-elf-app.vercel.app',
+        ),
+        now: () => Date.UTC(2026, 6, 25, 12),
+      },
+    )
+
+    const report = networkDiagnostics.report()
+    expect(report).toContain('"operation": "agent"')
+    expect(report).not.toContain('opaque-session-token')
+    expect(report).not.toContain('今晚吃什么')
+    expect(report).not.toContain('authorization')
   })
 
   it('surfaces a stable local error without leaking server payloads', async () => {

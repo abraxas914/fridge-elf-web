@@ -3,6 +3,12 @@ import type {
   DemoAgentResponse,
 } from './types'
 import type { RecipeIllustrationRequestV1 } from '../illustration/recipePlan'
+import {
+  beginNetworkRequest,
+  createTimeoutSignal,
+  isSafeNetworkRequestId,
+  type NetworkOperation,
+} from '../diagnostics/networkDiagnostics'
 
 const RETINBOX_HOST = 'fridgeelf.rth1.xyz'
 const VERCEL_BFF_ORIGIN = 'https://fridge-elf-app.vercel.app'
@@ -19,6 +25,7 @@ interface LocationLike {
 interface StorageLike {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
+  removeItem?(key: string): void
 }
 
 type Fetcher = (
@@ -44,9 +51,90 @@ export class DemoApiError extends Error {
   constructor(
     readonly code: string,
     readonly status = 0,
+    readonly requestId = '',
   ) {
     super('Demo AI service unavailable')
     this.name = 'DemoApiError'
+  }
+}
+
+const PUBLIC_ERROR_CODES = new Set([
+  'DEMO_SESSION_UNAVAILABLE',
+  'DEMO_SESSION_REQUIRED',
+  'DEMO_RATE_LIMITED',
+  'AGENT_UNAVAILABLE',
+  'TRANSCRIPTION_UNAVAILABLE',
+  'IMAGE_UNAVAILABLE',
+  'TIMEOUT',
+  'NETWORK_ERROR',
+  'ABORTED',
+  'RESPONSE_INVALID',
+])
+
+function responseRequestId(
+  response: Response,
+  fallback: string,
+) {
+  const requestId = response.headers?.get?.('x-request-id') ?? ''
+  return isSafeNetworkRequestId(requestId) ? requestId : fallback
+}
+
+async function responseErrorCode(
+  response: Response,
+  fallback: string,
+) {
+  try {
+    const payload = await response.json() as {
+      error?: { code?: unknown }
+    }
+    const code = payload?.error?.code
+    return typeof code === 'string' && PUBLIC_ERROR_CODES.has(code)
+      ? code
+      : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function browserFailureCode(
+  error: unknown,
+  timedOut: boolean,
+) {
+  if (timedOut) return 'TIMEOUT'
+  if (
+    error instanceof DOMException &&
+    error.name === 'AbortError'
+  ) {
+    return 'ABORTED'
+  }
+  return 'NETWORK_ERROR'
+}
+
+async function managedFetch(
+  operation: NetworkOperation,
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+  fetcher: Fetcher,
+) {
+  const trace = beginNetworkRequest(operation, url)
+  const timeout = createTimeoutSignal(timeoutMs)
+  const headers = Object.fromEntries(new Headers(init.headers))
+  headers['x-request-id'] = trace.requestId
+  try {
+    const response = await fetcher(url, {
+      ...init,
+      headers,
+      signal: timeout.signal,
+    })
+    trace.response(response.status)
+    return { response, trace }
+  } catch (error) {
+    const code = browserFailureCode(error, timeout.didTimeout())
+    trace.failure(code)
+    throw new DemoApiError(code, 0, trace.requestId)
+  } finally {
+    timeout.dispose()
   }
 }
 
@@ -93,44 +181,85 @@ function readStoredSession(
 export async function getDemoSession(
   options: DemoRequestOptions = {},
 ) {
-  const fetcher = options.fetcher ?? fetch
   const storage = options.storage ?? browserStorage()
-  const location = options.location ?? browserLocation()
   const now = options.now?.() ?? Date.now()
   const stored = readStoredSession(storage, now)
   if (stored) return stored.token
+  const session = await requestFreshDemoSession(options)
+  storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
+  return session.token
+}
 
+async function requestFreshDemoSession(
+  options: DemoRequestOptions = {},
+) {
+  const fetcher = options.fetcher ?? fetch
+  const location = options.location ?? browserLocation()
+  const url = demoApiUrl('/api/demo/session', location)
   try {
-    const response = await fetcher(
-      demoApiUrl('/api/demo/session', location),
+    const { response, trace } = await managedFetch(
+      'session',
+      url,
       {
         method: 'POST',
         headers: { accept: 'application/json' },
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       },
+      REQUEST_TIMEOUT_MS,
+      fetcher,
     )
     if (!response.ok) {
-      throw new DemoApiError('DEMO_SESSION_UNAVAILABLE', response.status)
+      const code = await responseErrorCode(
+        response,
+        'DEMO_SESSION_UNAVAILABLE',
+      )
+      trace.failure(code, response.status)
+      throw new DemoApiError(
+        code,
+        response.status,
+        responseRequestId(response, trace.requestId),
+      )
     }
-    const payload = (await response.json()) as Partial<StoredSession>
+    trace.parse()
+    let payload: Partial<StoredSession>
+    try {
+      payload = (await response.json()) as Partial<StoredSession>
+    } catch {
+      trace.failure('RESPONSE_INVALID', response.status)
+      throw new DemoApiError(
+        'RESPONSE_INVALID',
+        response.status,
+        responseRequestId(response, trace.requestId),
+      )
+    }
     if (
       typeof payload.token !== 'string' ||
       payload.token.length === 0 ||
       typeof payload.expiresAt !== 'string' ||
       !Number.isFinite(Date.parse(payload.expiresAt))
     ) {
-      throw new DemoApiError('DEMO_SESSION_UNAVAILABLE')
+      trace.failure('RESPONSE_INVALID', response.status)
+      throw new DemoApiError(
+        'RESPONSE_INVALID',
+        response.status,
+        responseRequestId(response, trace.requestId),
+      )
     }
-    const session = {
+    trace.success(response.status)
+    return {
       token: payload.token,
       expiresAt: payload.expiresAt,
     }
-    storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
-    return session.token
   } catch (error) {
     if (error instanceof DemoApiError) throw error
-    throw new DemoApiError('DEMO_SESSION_UNAVAILABLE')
+    throw new DemoApiError('DEMO_SESSION_UNAVAILABLE', 0)
   }
+}
+
+export async function probeDemoSession(
+  options: DemoRequestOptions = {},
+) {
+  await requestFreshDemoSession(options)
+  return { ok: true as const, status: 200 }
 }
 
 function isDemoAgentResponse(value: unknown): value is DemoAgentResponse {
@@ -185,28 +314,56 @@ export async function requestDemoAgent(
           snapshot: input.snapshot,
         }
       : { snapshot: input.snapshot }
+  const operation = input.mode === 'agent' ? 'agent' : 'recommend'
+  const url = demoApiUrl(path, location)
 
   try {
-    const response = await fetcher(demoApiUrl(path, location), {
-      method: 'POST',
-      headers: {
-        accept: 'application/json',
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
+    const { response, trace } = await managedFetch(
+      operation,
+      url,
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    })
+      REQUEST_TIMEOUT_MS,
+      fetcher,
+    )
     if (!response.ok) {
+      const fallback =
+        response.status === 429
+          ? 'DEMO_RATE_LIMITED'
+          : response.status === 401
+            ? 'DEMO_SESSION_REQUIRED'
+            : 'AGENT_UNAVAILABLE'
+      const code = await responseErrorCode(response, fallback)
+      trace.failure(code, response.status)
       throw new DemoApiError(
-        response.status === 429 ? 'DEMO_RATE_LIMITED' : 'AGENT_UNAVAILABLE',
+        code,
         response.status,
+        responseRequestId(response, trace.requestId),
       )
     }
-    const payload: unknown = await response.json()
-    if (!isDemoAgentResponse(payload)) {
-      throw new DemoApiError('AGENT_UNAVAILABLE')
+    trace.parse()
+    let payload: unknown
+    try {
+      payload = await response.json()
+    } catch {
+      payload = null
     }
+    if (!isDemoAgentResponse(payload)) {
+      trace.failure('RESPONSE_INVALID', response.status)
+      throw new DemoApiError(
+        'RESPONSE_INVALID',
+        response.status,
+        responseRequestId(response, trace.requestId),
+      )
+    }
+    trace.success(response.status)
     return payload
   } catch (error) {
     if (error instanceof DemoApiError) throw error
@@ -221,10 +378,12 @@ export async function requestDemoIllustration(
   const fetcher = options.fetcher ?? fetch
   const location = options.location ?? browserLocation()
   const token = await getDemoSession(options)
+  const url = demoApiUrl('/api/illustrate', location)
 
   try {
-    const response = await fetcher(
-      demoApiUrl('/api/illustrate', location),
+    const { response, trace } = await managedFetch(
+      'illustrate',
+      url,
       {
         method: 'POST',
         headers: {
@@ -233,21 +392,35 @@ export async function requestDemoIllustration(
           'content-type': 'application/json',
         },
         body: JSON.stringify(input),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       },
+      REQUEST_TIMEOUT_MS,
+      fetcher,
     )
     if (!response.ok) {
-      throw new DemoApiError(
+      const fallback =
         response.status === 429
           ? 'DEMO_RATE_LIMITED'
-          : 'IMAGE_UNAVAILABLE',
+          : 'IMAGE_UNAVAILABLE'
+      const code = await responseErrorCode(response, fallback)
+      trace.failure(code, response.status)
+      throw new DemoApiError(
+        code,
         response.status,
+        responseRequestId(response, trace.requestId),
       )
     }
     if (response.headers.get('content-type') !== 'image/png') {
-      throw new DemoApiError('IMAGE_UNAVAILABLE')
+      trace.failure('RESPONSE_INVALID', response.status)
+      throw new DemoApiError(
+        'RESPONSE_INVALID',
+        response.status,
+        responseRequestId(response, trace.requestId),
+      )
     }
-    return await response.blob()
+    trace.parse()
+    const blob = await response.blob()
+    trace.success(response.status)
+    return blob
   } catch (error) {
     if (error instanceof DemoApiError) throw error
     throw new DemoApiError('IMAGE_UNAVAILABLE')
@@ -263,10 +436,12 @@ export async function requestDemoTranscription(
   const token = await getDemoSession(options)
   const body = new FormData()
   body.append('audio', audio, audioFilename(audio))
+  const url = demoApiUrl('/api/demo/transcribe', location)
 
   try {
-    const response = await fetcher(
-      demoApiUrl('/api/demo/transcribe', location),
+    const { response, trace } = await managedFetch(
+      'transcribe',
+      url,
       {
         method: 'POST',
         headers: {
@@ -274,21 +449,40 @@ export async function requestDemoTranscription(
           authorization: `Bearer ${token}`,
         },
         body,
-        signal: AbortSignal.timeout(TRANSCRIPTION_TIMEOUT_MS),
       },
+      TRANSCRIPTION_TIMEOUT_MS,
+      fetcher,
     )
     if (!response.ok) {
-      throw new DemoApiError(
+      const fallback =
         response.status === 429
           ? 'DEMO_RATE_LIMITED'
-          : 'TRANSCRIPTION_UNAVAILABLE',
+          : 'TRANSCRIPTION_UNAVAILABLE'
+      const code = await responseErrorCode(response, fallback)
+      trace.failure(code, response.status)
+      throw new DemoApiError(
+        code,
         response.status,
+        responseRequestId(response, trace.requestId),
       )
     }
-    const text = transcriptionText(await response.json())
-    if (!text) {
-      throw new DemoApiError('TRANSCRIPTION_UNAVAILABLE')
+    trace.parse()
+    let payload: unknown
+    try {
+      payload = await response.json()
+    } catch {
+      payload = null
     }
+    const text = transcriptionText(payload)
+    if (!text) {
+      trace.failure('RESPONSE_INVALID', response.status)
+      throw new DemoApiError(
+        'RESPONSE_INVALID',
+        response.status,
+        responseRequestId(response, trace.requestId),
+      )
+    }
+    trace.success(response.status)
     return text
   } catch (error) {
     if (error instanceof DemoApiError) throw error
