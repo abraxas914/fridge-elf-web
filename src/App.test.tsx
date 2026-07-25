@@ -143,6 +143,16 @@ describe('App', () => {
     )
   })
 
+  it('offers a browser-only restart action for resetting the Demo world', () => {
+    const onRestartDemo = vi.fn()
+    render(<App onRestartDemo={onRestartDemo} />)
+    fireEvent.click(screen.getByRole('button', { name: '跳过' }))
+
+    fireEvent.click(screen.getByRole('button', { name: '重新开始 Demo' }))
+
+    expect(onRestartDemo).toHaveBeenCalledOnce()
+  })
+
   it('lets Android Back close a modal then restore the previous tab', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: '跳过' }))

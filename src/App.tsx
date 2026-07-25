@@ -76,11 +76,13 @@ function presentInventory(
 export function App({
   inventoryRuntime: providedInventoryRuntime,
   demoAgentRequester,
+  onRestartDemo,
 }: {
   inventoryRuntime?: AppInventoryRuntime
   demoAgentRequester?: (
     input: DemoAgentInput,
   ) => Promise<DemoAgentResponse>
+  onRestartDemo?: () => void
 } = {}) {
   const tabHistory = useRef<AppTab[]>([])
   const audioRef = useRef<ReturnType<typeof createBrowserAudio> | null>(null)
@@ -393,6 +395,11 @@ export function App({
           audio.play('tick')
           dispatch({ type: 'close-modal' })
         }}
+        onRestartDemo={
+          inventoryRuntime.mode === 'browser-mock'
+            ? onRestartDemo ?? (() => window.location.reload())
+            : undefined
+        }
       >
         <ShoppingScene
           active={state.currentTab === 'shop'}

@@ -305,6 +305,28 @@
   white-space: nowrap;
 }
 
+.restart-demo-btn {
+  padding: 3px 5px;
+  color: var(--text-mid);
+  font-family: "DotGothic16", monospace;
+  font-size: 8px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  background: var(--panel-3);
+  border: 1.5px solid var(--border);
+  box-shadow: 1px 1px 0 var(--shadow);
+}
+
+.restart-demo-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+
+.app-header.compact .restart-demo-btn {
+  padding: 4px 6px;
+}
+
 @keyframes sigPulse {
   0%,
   100% { opacity: 1; }

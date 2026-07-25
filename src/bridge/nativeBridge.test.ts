@@ -118,13 +118,8 @@ describe('typed NativeBridge boundary', () => {
     unsubscribe()
   })
 
-  it('persists only browser inventory and publishes one replacement event', async () => {
-    const memory = new Map<string, string>()
-    const storage = {
-      getItem: (key: string) => memory.get(key) ?? null,
-      setItem: (key: string, value: string) => memory.set(key, value),
-    }
-    const mock = createBrowserMock(storage)
+  it('keeps browser inventory in memory for one Demo visit only', async () => {
+    const mock = createBrowserMock()
     const listener = vi.fn()
     mock.subscribe(listener)
     await mock.addItem({
@@ -134,13 +129,15 @@ describe('typed NativeBridge boundary', () => {
       expiryDate: '2026-07-31',
     })
 
-    expect([...memory.keys()]).toEqual([
-      'life-helper-v2-browser-inventory',
-    ])
     expect(listener).toHaveBeenCalledOnce()
-    expect((await createBrowserMock(storage).getItems()).at(-1)).toMatchObject({
+    expect((await mock.getItems()).at(-1)).toMatchObject({
       name: '酸奶',
       status: '本地预览',
     })
+    expect(
+      (await createBrowserMock().getItems()).some(
+        (item) => item.name === '酸奶',
+      ),
+    ).toBe(false)
   })
 })
