@@ -7,11 +7,7 @@ import {
 } from '@testing-library/react'
 import { useReducer } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import type {
-  CredentialPort,
-  RecipeIllustrationPort,
-} from '../../app/ports'
-import type { CredentialSummaries } from '../../features/credentials/types'
+import type { RecipeIllustrationPort } from '../../app/ports'
 import { appReducer, emptyPlanner } from '../../app/state'
 import { RECIPES } from '../../fixtures/goldenFixture'
 import { MealPlannerModal } from './MealPlannerModal'
@@ -80,26 +76,6 @@ describe('RecipeDetailModal', () => {
 
   it('turns the displayed recipe into the shared illustration contract', async () => {
     vi.useFakeTimers()
-    const credentials: CredentialPort = {
-      getSummaries: async (): Promise<CredentialSummaries> => ({
-        assistant: {
-          capability: 'assistant',
-          status: 'verified',
-          providerId: 'custom',
-          providerLabel: '测试服务',
-          modelId: 'chat-test',
-        },
-        'recipe-illustration': {
-          capability: 'recipe-illustration',
-          status: 'saved',
-          providerId: 'custom',
-          providerLabel: '测试服务',
-          modelId: 'image-test',
-        },
-      }),
-      saveConfig: vi.fn(),
-      removeConfig: vi.fn(),
-    }
     const illustration: RecipeIllustrationPort = {
       start: vi.fn(async () => ({
         id: 'job-1',
@@ -121,9 +97,8 @@ describe('RecipeDetailModal', () => {
     render(
       <RecipeDetailModal
         recipe={RECIPES[0]}
-        credentials={credentials}
         illustration={illustration}
-        onConfigure={vi.fn()}
+        managed
       />,
     )
     await act(async () => {

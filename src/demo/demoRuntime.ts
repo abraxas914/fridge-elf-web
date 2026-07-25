@@ -9,7 +9,6 @@ import type { AssistantPort, CredentialPort } from '../app/ports'
 import {
   createBrowserDisplay,
   createBrowserMock,
-  createBrowserRecipeIllustrationMock,
   createBrowserSpeech,
   type AppRuntime,
 } from '../bridge/browserMock'
@@ -19,6 +18,10 @@ import type {
   CredentialSummary,
 } from '../features/credentials/types'
 import { createMemoryStorage } from './memoryStorage'
+import {
+  createManagedIllustration,
+  type DemoIllustrationRequester,
+} from './managedIllustration'
 
 export type DemoAgentRequester = (
   input: DemoAgentInput,
@@ -26,6 +29,11 @@ export type DemoAgentRequester = (
 
 export interface DemoRuntimeOptions {
   agentRequester?: DemoAgentRequester
+  illustrationRequester?: DemoIllustrationRequester
+}
+
+export interface DemoRuntime extends AppRuntime {
+  dispose(): void
 }
 
 const MANAGED_PROVIDER = 'Fridge Elf Demo Gateway'
@@ -186,18 +194,25 @@ function createManagedAssistant(
 
 export function createDemoRuntime(
   options: DemoRuntimeOptions = {},
-): AppRuntime {
+): DemoRuntime {
   const stateStorage = createMemoryStorage()
+  const recipeIllustration = createManagedIllustration(
+    options.illustrationRequester,
+  )
   return {
     inventory: createBrowserMock(stateStorage),
     credentials: createManagedCredentials(),
     assistant: createManagedAssistant(
       options.agentRequester ?? requestDemoAgent,
     ),
-    recipeIllustration: createBrowserRecipeIllustrationMock(),
+    recipeIllustration,
     speech: createBrowserSpeech(),
     display: createBrowserDisplay(stateStorage),
     stateStorage,
     mode: 'browser-mock',
+    dispose() {
+      recipeIllustration.dispose()
+      stateStorage.clear()
+    },
   }
 }

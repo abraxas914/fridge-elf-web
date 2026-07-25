@@ -457,13 +457,8 @@ export function App({
             content: (
               <RecipeDetailModal
                 recipe={state.modal.payload as Recipe}
-                credentials={runtime.credentials}
                 illustration={runtime.recipeIllustration}
-                onConfigure={() => {
-                  dispatch({ type: 'close-modal' })
-                  setCredentialTarget('recipe-illustration')
-                  dispatch({ type: 'select-tab', tab: 'me' })
-                }}
+                managed={runtime.mode === 'browser-mock'}
               />
             ),
           }

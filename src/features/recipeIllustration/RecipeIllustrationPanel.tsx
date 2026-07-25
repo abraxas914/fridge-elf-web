@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type {
-  CredentialPort,
-  RecipeIllustrationPort,
-} from '../../app/ports'
-import type { CredentialSummary } from '../credentials/types'
+import type { RecipeIllustrationPort } from '../../app/ports'
 import { RECIPE_ILLUSTRATION_STYLES } from './styles'
 import type {
   RecipeIllustrationJob,
@@ -15,21 +11,17 @@ import './RecipeIllustrationPanel.css'
 
 interface RecipeIllustrationPanelProps {
   recipe: RecipeIllustrationRecipe
-  credentials: CredentialPort
+  managed: boolean
   illustration: RecipeIllustrationPort
-  onConfigure: () => void
   pollIntervalMs?: number
 }
 
 export function RecipeIllustrationPanel({
   recipe,
-  credentials,
+  managed,
   illustration,
-  onConfigure,
   pollIntervalMs = 750,
 }: RecipeIllustrationPanelProps) {
-  const [provider, setProvider] =
-    useState<CredentialSummary | null>(null)
   const [styleId, setStyleId] =
     useState<RecipeIllustrationStyleId>('xiaohei')
   const [job, setJob] = useState<RecipeIllustrationJob | null>(null)
@@ -38,21 +30,6 @@ export function RecipeIllustrationPanel({
   >([])
   const [error, setError] = useState('')
   const [starting, setStarting] = useState(false)
-
-  useEffect(() => {
-    let mounted = true
-    void credentials
-      .getSummaries()
-      .then((summaries) => {
-        if (mounted) setProvider(summaries['recipe-illustration'])
-      })
-      .catch(() => {
-        if (mounted) setError('暂时无法读取插画配置')
-      })
-    return () => {
-      mounted = false
-    }
-  }, [credentials])
 
   useEffect(() => {
     if (!job || !['queued', 'running'].includes(job.status)) return
@@ -124,39 +101,6 @@ export function RecipeIllustrationPanel({
     }
   }
 
-  if (!provider && !error) {
-    return (
-      <div className="recipe-illustration-panel">
-        <div role="status">正在读取插画配置…</div>
-      </div>
-    )
-  }
-
-  if (
-    provider?.status === 'not_configured' ||
-    provider?.status === 'needs_attention'
-  ) {
-    return (
-      <section
-        aria-label="食谱插画"
-        className="recipe-illustration-panel unconfigured"
-      >
-        <div className="recipe-illustration-heading">
-          <span>4 STYLES</span>
-          <b>食谱插画</b>
-        </div>
-        <p>配置密钥后生成</p>
-        <button
-          className="recipe-illustration-primary"
-          type="button"
-          onClick={onConfigure}
-        >
-          去配置
-        </button>
-      </section>
-    )
-  }
-
   const running = job?.status === 'queued' || job?.status === 'running'
 
   return (
@@ -165,7 +109,7 @@ export function RecipeIllustrationPanel({
       className="recipe-illustration-panel"
     >
       <div className="recipe-illustration-heading">
-        <span>4 STYLES</span>
+        <span>{managed ? 'MANAGED IMAGE2' : '4 STYLES'}</span>
         <b>生成食谱插画</b>
       </div>
       <fieldset

@@ -25,6 +25,7 @@
     "src/features/recipeIllustration/RecipeIllustrationPanel.tsx",
     "src/scenes/profile/ProfileScene.tsx",
     "src/scenes/recipe/AssistantAnswer.tsx",
+    "src/scenes/recipe/RecipeDetailModal.tsx",
     "src/scenes/recipe/RecipeScene.tsx"
   ],
   "files": {

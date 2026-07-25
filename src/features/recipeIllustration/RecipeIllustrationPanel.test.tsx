@@ -5,14 +5,7 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type {
-  CredentialPort,
-  RecipeIllustrationPort,
-} from '../../app/ports'
-import type {
-  CredentialStatus,
-  CredentialSummaries,
-} from '../credentials/types'
+import type { RecipeIllustrationPort } from '../../app/ports'
 import type {
   RecipeIllustrationJob,
   RecipeIllustrationRecipe,
@@ -30,29 +23,6 @@ const RECIPE: RecipeIllustrationRecipe = {
     { order: 1, action: '搅匀鸡蛋', target: '鸡蛋' },
     { order: 2, action: '番茄切块', target: '番茄' },
   ],
-}
-
-function provider(status: CredentialStatus): CredentialPort {
-  return {
-    getSummaries: async (): Promise<CredentialSummaries> => ({
-      assistant: {
-        capability: 'assistant',
-        status: 'verified',
-        providerId: 'custom',
-        providerLabel: '测试服务',
-        modelId: 'chat-test',
-      },
-      'recipe-illustration': {
-        capability: 'recipe-illustration',
-        status,
-        providerId: status === 'not_configured' ? '' : 'custom',
-        providerLabel: status === 'not_configured' ? '' : '测试服务',
-        modelId: status === 'not_configured' ? '' : 'image-test',
-      },
-    }),
-    saveConfig: vi.fn(),
-    removeConfig: vi.fn(),
-  }
 }
 
 function illustration(
@@ -78,27 +48,21 @@ function illustration(
 }
 
 describe('RecipeIllustrationPanel', () => {
-  it('routes an unconfigured user to the device-only settings', async () => {
-    const onConfigure = vi.fn()
+  it('exposes the managed illustration controls without visitor configuration', () => {
     const { container } = render(
       <RecipeIllustrationPanel
-        credentials={provider('not_configured')}
+        managed
         illustration={illustration()}
-        onConfigure={onConfigure}
         recipe={RECIPE}
       />,
     )
 
-    const button = await screen.findByRole('button', {
-      name: '去配置',
-    })
-    fireEvent.click(button)
-    expect(onConfigure).toHaveBeenCalledOnce()
+    expect(screen.getAllByRole('radio')).toHaveLength(4)
     expect(
-      screen.getByText('配置密钥后生成'),
-    ).toBeVisible()
+      screen.getByRole('button', { name: '生成食谱插画' }),
+    ).toBeEnabled()
     expect(container.textContent).not.toMatch(
-      /BYOK|Image2|gpt-image-2|原生层|Web storage|API Key|请求端点/i,
+      /配置密钥|去配置|BYOK|gpt-image-2|API Key|请求端点/i,
     )
   })
 
@@ -106,9 +70,8 @@ describe('RecipeIllustrationPanel', () => {
     const port = illustration()
     render(
       <RecipeIllustrationPanel
-        credentials={provider('saved')}
+        managed
         illustration={port}
-        onConfigure={vi.fn()}
         recipe={RECIPE}
       />,
     )
@@ -161,9 +124,8 @@ describe('RecipeIllustrationPanel', () => {
     }
     render(
       <RecipeIllustrationPanel
-        credentials={provider('verified')}
+        managed
         illustration={port}
-        onConfigure={vi.fn()}
         pollIntervalMs={1}
         recipe={RECIPE}
       />,
@@ -198,9 +160,8 @@ describe('RecipeIllustrationPanel', () => {
     })
     render(
       <RecipeIllustrationPanel
-        credentials={provider('saved')}
+        managed
         illustration={port}
-        onConfigure={vi.fn()}
         recipe={RECIPE}
       />,
     )
@@ -260,9 +221,8 @@ describe('RecipeIllustrationPanel', () => {
     }
     render(
       <RecipeIllustrationPanel
-        credentials={provider('saved')}
+        managed
         illustration={port}
-        onConfigure={vi.fn()}
         recipe={{
           ...RECIPE,
           steps: Array.from({ length: 7 }, (_, index) => ({

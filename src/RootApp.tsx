@@ -20,8 +20,11 @@ export function RootApp() {
   useEffect(() => {
     const syncRoute = () => setRoute(routeFor(window.location.pathname))
     window.addEventListener('popstate', syncRoute)
-    return () => window.removeEventListener('popstate', syncRoute)
-  }, [])
+    return () => {
+      window.removeEventListener('popstate', syncRoute)
+      demoSession.runtime.dispose()
+    }
+  }, [demoSession.runtime])
 
   const openDemo = () => {
     window.history.pushState({}, '', '/demo')
@@ -35,10 +38,13 @@ export function RootApp() {
           key={demoSession.key}
           inventoryRuntime={demoSession.runtime}
           onRestartDemo={() =>
-            setDemoSession((current) => ({
-              key: current.key + 1,
-              runtime: createDemoRuntime(),
-            }))
+            setDemoSession((current) => {
+              current.runtime.dispose()
+              return {
+                key: current.key + 1,
+                runtime: createDemoRuntime(),
+              }
+            })
           }
         />
       </Suspense>

@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react'
-import type {
-  CredentialPort,
-  RecipeIllustrationPort,
-} from '../../app/ports'
+import type { RecipeIllustrationPort } from '../../app/ports'
 import {
-  createBrowserCredentialMock,
   createBrowserRecipeIllustrationMock,
 } from '../../bridge/browserMock'
 import { RecipeIllustrationPanel } from '../../features/recipeIllustration/RecipeIllustrationPanel'
@@ -14,7 +10,6 @@ import {
   toIllustrationRecipe,
 } from './recipeContent'
 
-const previewCredentials = createBrowserCredentialMock()
 const previewIllustration = createBrowserRecipeIllustrationMock()
 
 export function PotTransition() {
@@ -53,16 +48,14 @@ export function PotTransition() {
 
 interface RecipeDetailModalProps {
   recipe: Recipe
-  credentials?: CredentialPort
   illustration?: RecipeIllustrationPort
-  onConfigure?: () => void
+  managed?: boolean
 }
 
 export function RecipeDetailModal({
   recipe,
-  credentials = previewCredentials,
   illustration = previewIllustration,
-  onConfigure = () => undefined,
+  managed = true,
 }: RecipeDetailModalProps) {
   const [ready, setReady] = useState(false)
   useEffect(() => {
@@ -84,9 +77,8 @@ export function RecipeDetailModal({
       <div className="recipe-step-list">{steps.map((step) => <div className="recipe-step" key={step}>{step}</div>)}</div>
       <RecipeIllustrationPanel
         recipe={toIllustrationRecipe(recipe)}
-        credentials={credentials}
+        managed={managed}
         illustration={illustration}
-        onConfigure={onConfigure}
       />
     </>
   )
