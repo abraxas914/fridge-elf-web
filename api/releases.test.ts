@@ -95,4 +95,35 @@ describe('release endpoints', () => {
       'authorization',
     )
   })
+
+  it('retries without a token when authenticated metadata has stale asset names', async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          ...upstreamRelease,
+          assets: [
+            {
+              name: 'Smart-Tag-v1.2.3.apk',
+              browser_download_url:
+                'https://github.com/YantingShen-dev/fridge_app/releases/download/v1.2.3/Smart-Tag-v1.2.3.apk',
+              size: 12_000_000,
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(Response.json(upstreamRelease))
+
+    const response = await handleLatestReleaseRequest(
+      new Request('https://fridgeelf.rth1.xyz/api/releases/latest'),
+      { GITHUB_RELEASE_TOKEN: 'stale-cache-token' },
+      fetcher,
+    )
+
+    expect(response.status).toBe(200)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    expect(await response.json()).toMatchObject({
+      apkName: 'fridge-elf-android-v1.2.3.apk',
+    })
+  })
 })
