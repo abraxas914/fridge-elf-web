@@ -28,11 +28,11 @@ describe('RecipeShowcase', () => {
     screen.getAllByRole('img').forEach((image, index) => {
       expect(image).toHaveAttribute(
         'src',
-        `/assets/recipe/recipe-sample-0${index + 1}.webp`,
+        `/assets/recipe/recipe-sample-0${index + 1}-v2.webp`,
       )
       expect(image).toHaveAttribute(
         'srcset',
-        expect.stringContaining(`recipe-sample-0${index + 1}@2x.webp`),
+        expect.stringContaining(`recipe-sample-0${index + 1}-v2@2x.webp`),
       )
       expect(image).toHaveAttribute('width', '1200')
       expect(image).toHaveAttribute('height', '1440')
