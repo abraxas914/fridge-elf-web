@@ -9,13 +9,13 @@ test('landing page links the latest APK and opens the demo without leaving the d
       contentType: 'application/json',
       body: JSON.stringify({
         tagName: 'v1.2.3',
-        title: 'Smart Tag v1.2.3',
+        title: 'Fridge Elf v1.2.3',
         publishedAt: '2026-07-25T08:00:00Z',
         releaseUrl:
           'https://github.com/YantingShen-dev/fridge_app/releases/tag/v1.2.3',
-        apkName: 'smart-tag-android-v1.2.3.apk',
+        apkName: 'fridge-elf-android-v1.2.3.apk',
         apkUrl:
-          'https://github.com/YantingShen-dev/fridge_app/releases/download/v1.2.3/smart-tag-android-v1.2.3.apk',
+          'https://github.com/YantingShen-dev/fridge_app/releases/download/v1.2.3/fridge-elf-android-v1.2.3.apk',
         apkSize: 12_582_912,
         checksumUrl: null,
       }),

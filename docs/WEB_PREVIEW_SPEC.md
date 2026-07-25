@@ -54,20 +54,32 @@ Headers:
 - `Content-Type: application/json`
 - `Authorization: Bearer <anonymous-session>`
 
-Body 只允许：
+Body 使用 Fridge Elf 跨端 V1 契约。Web 同步接口每次只生成一页，因此
+`pageIndexes` 必须恰好包含一个页码：
 
 ```json
 {
-  "style": "xiaohei | watercolor | linen-zine | pixel-doodle",
-  "recipeText": "中文食谱",
-  "page": 1
+  "contractVersion": 1,
+  "recipe": {
+    "id": "recipe-id",
+    "title": "番茄炒蛋",
+    "ingredients": [{ "name": "番茄", "amount": "2个" }],
+    "steps": [{ "order": 1, "action": "番茄切块" }]
+  },
+  "styleId": "xiaohei | pixel-person | linen-zine | watercolor-kitchen",
+  "pageIndexes": [1]
 }
 ```
+
+迁移期服务端兼容旧 `{ style, recipeText, page }`，并立即映射
+`watercolor → watercolor-kitchen`、
+`pixel-doodle → pixel-person`。前端和响应不再输出旧 ID。
 
 成功返回 `image/png`，并包含：
 
 - `X-Recipe-Page`
 - `X-Recipe-Pages`
+- `X-Fridge-Elf-Contract: 1`
 - `Cache-Control: no-store`
 
 服务端调用由 `HEADLESS_IMAGE_GATEWAY_*` 配置的 OpenAI-compatible 图片端点：

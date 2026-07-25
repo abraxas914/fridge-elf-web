@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   compileRecipePlan,
+  createRecipeIllustrationRequestV1,
   ILLUSTRATION_STYLES,
   type IllustrationStyleId,
 } from '../../illustration/recipePlan'
@@ -59,11 +60,14 @@ export function IllustrationModal({
     try {
       for (let page = 1; page <= plan.pages.length; page += 1) {
         setStatus(`正在生成第 ${page}/${plan.pages.length} 页…`)
-        const blob = await requester({
-          style,
-          recipeText,
-          page,
-        })
+        const blob = await requester(
+          createRecipeIllustrationRequestV1(
+            plan,
+            style,
+            [page],
+            'web-preview-recipe',
+          ),
+        )
         if (blob.type !== 'image/png') {
           throw new Error('图片服务返回了未知格式')
         }

@@ -1,8 +1,12 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import {
+  buildRecipePlanFromStructuredRecipe,
   buildIllustrationPrompt,
   compileRecipePlan,
   isIllustrationStyleId,
+  normalizeIllustrationStyleId,
+  type IllustrationStyleId,
+  type RecipePlan,
 } from '../../src/illustration/recipePlan.js'
 import { demoCorsHeaders, demoJsonError } from './demoCors.js'
 import {
@@ -29,7 +33,64 @@ const DEFAULT_IMAGE_ENDPOINT =
 const MAX_RECIPE_LENGTH = 4_000
 const MAX_IMAGE_BYTES = 4_200_000
 const RETRY_DELAYS = [1_000, 3_000] as const
-const ALLOWED_KEYS = ['page', 'recipeText', 'style']
+const V1_ALLOWED_KEYS = [
+  'contractVersion',
+  'pageIndexes',
+  'recipe',
+  'styleId',
+]
+const LEGACY_ALLOWED_KEYS = ['page', 'recipeText', 'style']
+
+interface ParsedIllustrationRequest {
+  plan: RecipePlan
+  styleId: IllustrationStyleId
+  pageNumber: number
+}
+
+function hasExactKeys(record: Record<string, unknown>, keys: string[]) {
+  return Object.keys(record).sort().join(',') === keys.join(',')
+}
+
+function parseIllustrationBody(
+  record: Record<string, unknown>,
+): ParsedIllustrationRequest {
+  if (hasExactKeys(record, V1_ALLOWED_KEYS)) {
+    if (
+      record.contractVersion !== 1 ||
+      !isIllustrationStyleId(record.styleId) ||
+      !Array.isArray(record.pageIndexes) ||
+      record.pageIndexes.length !== 1 ||
+      !Number.isInteger(record.pageIndexes[0])
+    ) {
+      throw new Error('契约版本、风格或页码不合法')
+    }
+    return {
+      plan: buildRecipePlanFromStructuredRecipe(record.recipe),
+      styleId: record.styleId,
+      pageNumber: record.pageIndexes[0] as number,
+    }
+  }
+
+  if (hasExactKeys(record, LEGACY_ALLOWED_KEYS)) {
+    const styleId = normalizeIllustrationStyleId(record.style)
+    if (
+      !styleId ||
+      typeof record.recipeText !== 'string' ||
+      record.recipeText.length === 0 ||
+      record.recipeText.length > MAX_RECIPE_LENGTH ||
+      !Number.isInteger(record.page)
+    ) {
+      throw new Error('旧版风格、食谱正文或页码不合法')
+    }
+    return {
+      plan: compileRecipePlan(record.recipeText),
+      styleId,
+      pageNumber: record.page as number,
+    }
+  }
+
+  throw new Error('请求字段不符合 Fridge Elf V1 契约')
+}
 
 function signature(secret: string, expires: string) {
   return createHmac('sha256', secret).update(expires).digest('base64url')
@@ -223,39 +284,23 @@ export async function handleIllustrationRequest(
     return demoJsonError(400, 'INVALID_BODY', '请求字段不合法', cors)
   }
   const record = body as Record<string, unknown>
-  if (
-    Object.keys(record).sort().join(',') !== ALLOWED_KEYS.join(',') ||
-    !isIllustrationStyleId(record.style) ||
-    typeof record.recipeText !== 'string' ||
-    record.recipeText.length === 0 ||
-    record.recipeText.length > MAX_RECIPE_LENGTH ||
-    !Number.isInteger(record.page)
-  ) {
+  let parsed: ParsedIllustrationRequest
+  try {
+    parsed = parseIllustrationBody(record)
+  } catch (error) {
     return demoJsonError(
       400,
       'INVALID_BODY',
-      '风格、食谱正文或页码不合法',
+      error instanceof Error ? error.message : '请求字段不合法',
       cors,
     )
   }
-
-  let plan
-  try {
-    plan = compileRecipePlan(record.recipeText)
-  } catch (error) {
-    return demoJsonError(
-      422,
-      'INVALID_RECIPE',
-      error instanceof Error ? error.message : '无法解析食谱',
-      cors,
-    )
-  }
-  const pageNumber = record.page as number
+  const { plan, styleId, pageNumber } = parsed
   if (pageNumber < 1 || pageNumber > plan.pages.length) {
     return demoJsonError(400, 'INVALID_PAGE', '页码超出食谱范围', cors)
   }
 
-  const prompt = buildIllustrationPrompt(plan, record.style, pageNumber)
+  const prompt = buildIllustrationPrompt(plan, styleId, pageNumber)
   const image = await generateImage(
     imageGatewayUrl(imageBaseUrl),
     imageApiKey,
@@ -276,6 +321,7 @@ export async function handleIllustrationRequest(
   cors.set('content-length', String(image.byteLength))
   cors.set('content-type', 'image/png')
   cors.set('x-content-type-options', 'nosniff')
+  cors.set('x-fridge-elf-contract', '1')
   cors.set('x-recipe-page', String(pageNumber))
   cors.set('x-recipe-pages', String(plan.pages.length))
   return new Response(image, {

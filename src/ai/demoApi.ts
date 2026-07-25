@@ -2,7 +2,7 @@ import type {
   DemoAgentInput,
   DemoAgentResponse,
 } from './types'
-import type { IllustrationStyleId } from '../illustration/recipePlan'
+import type { RecipeIllustrationRequestV1 } from '../illustration/recipePlan'
 
 const RETINBOX_HOST = 'fridgeelf.rth1.xyz'
 const VERCEL_BFF_ORIGIN = 'https://fridge-elf-app.vercel.app'
@@ -31,11 +31,7 @@ export interface DemoRequestOptions {
   now?: () => number
 }
 
-export interface DemoIllustrationInput {
-  style: IllustrationStyleId
-  recipeText: string
-  page: number
-}
+export type DemoIllustrationInput = RecipeIllustrationRequestV1
 
 interface StoredSession {
   token: string

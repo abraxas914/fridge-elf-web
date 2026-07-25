@@ -32,7 +32,7 @@ describe('IllustrationModal', () => {
     expect(screen.getByRole('button', { name: /小黑手绘/ })).toBeVisible()
     expect(screen.getByRole('button', { name: /水彩厨房/ })).toBeVisible()
     expect(screen.getByRole('button', { name: /亚麻手帖/ })).toBeVisible()
-    expect(screen.getByRole('button', { name: /像素涂鸦/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: /像素小人/ })).toBeVisible()
     expect(screen.queryByText(/演示链接无效/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /生成插画/ })).toBeEnabled()
   })
@@ -54,10 +54,17 @@ describe('IllustrationModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /生成插画/ }))
 
     await waitFor(() => expect(requester).toHaveBeenCalledOnce())
-    expect(requester).toHaveBeenCalledWith({
-      style: 'watercolor',
-      page: 1,
-      recipeText: RECIPE,
+    expect(requester.mock.calls[0][0]).toMatchObject({
+      contractVersion: 1,
+      recipe: {
+        title: '番茄炒蛋',
+        ingredients: [
+          { name: '番茄', amount: '2个' },
+          { name: '鸡蛋', amount: '3个' },
+        ],
+      },
+      styleId: 'watercolor-kitchen',
+      pageIndexes: [1],
     })
     expect(await screen.findByRole('img', { name: /番茄炒蛋.*第 1 页/ })).toHaveAttribute(
       'src',
@@ -93,8 +100,8 @@ describe('IllustrationModal', () => {
 
     await waitFor(() => expect(requester).toHaveBeenCalledTimes(2))
     expect(
-      requester.mock.calls.map((call) => call[0].page),
-    ).toEqual([1, 2])
+      requester.mock.calls.map((call) => call[0].pageIndexes),
+    ).toEqual([[1], [2]])
     expect(await screen.findAllByRole('img')).toHaveLength(2)
     expect(URL.revokeObjectURL).not.toHaveBeenCalled()
   })

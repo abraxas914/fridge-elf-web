@@ -41,8 +41,9 @@ test('anonymous demo session generates an illustration without exposing a key', 
   await expect(page.getByRole('img', { name: /番茄炒蛋.*第 1 页/ })).toBeVisible()
   expect(requests).toHaveLength(1)
   expect(requests[0]).toMatchObject({
-    style: 'watercolor',
-    page: 1,
+    contractVersion: 1,
+    styleId: 'watercolor-kitchen',
+    pageIndexes: [1],
   })
   expect(requests[0]).not.toHaveProperty('prompt')
   expect(JSON.stringify(requests[0])).not.toContain('sk-')

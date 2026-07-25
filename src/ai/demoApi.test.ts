@@ -130,9 +130,15 @@ describe('browser demo agent API', () => {
 
     const blob = await requestDemoIllustration(
       {
-        style: 'xiaohei',
-        recipeText: '# 菜名\n食材：\n- 番茄\n步骤：\n1. 切块。',
-        page: 1,
+        contractVersion: 1,
+        recipe: {
+          id: 'demo-tomato',
+          title: '番茄小菜',
+          ingredients: [{ name: '番茄' }],
+          steps: [{ order: 1, action: '切块。' }],
+        },
+        styleId: 'xiaohei',
+        pageIndexes: [1],
       },
       {
         fetcher,
@@ -150,7 +156,7 @@ describe('browser demo agent API', () => {
     expect(init.headers.authorization).toBe(
       'Bearer opaque-session-token',
     )
-    expect(JSON.parse(init.body).style).toBe('xiaohei')
+    expect(JSON.parse(init.body).styleId).toBe('xiaohei')
   })
 
   it('surfaces a stable local error without leaking server payloads', async () => {

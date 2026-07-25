@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildIllustrationPrompt,
   compileRecipePlan,
+  createRecipeIllustrationRequestV1,
   ILLUSTRATION_STYLES,
 } from './recipePlan'
 
@@ -85,15 +86,15 @@ describe('illustration prompt runtime', () => {
   it('exposes exactly the four accepted skill styles', () => {
     expect(ILLUSTRATION_STYLES.map((style) => style.id)).toEqual([
       'xiaohei',
-      'watercolor',
+      'pixel-person',
       'linen-zine',
-      'pixel-doodle',
+      'watercolor-kitchen',
     ])
   })
 
   it('locks exact Chinese and applies the selected skill DNA per page', () => {
     const plan = compileRecipePlan(NINE_STEP_RECIPE)
-    const prompt = buildIllustrationPrompt(plan, 'watercolor', 2)
+    const prompt = buildIllustrationPrompt(plan, 'watercolor-kitchen', 2)
 
     expect(prompt).toContain('exactly 1200×1440 pixels')
     expect(prompt).toContain('"番茄鸡蛋面"')
@@ -105,5 +106,34 @@ describe('illustration prompt runtime', () => {
     expect(prompt).toContain('9. ')
     expect(prompt).not.toContain('1. 番茄洗净切块')
     expect(prompt).not.toContain('Ingredient labels when is_first=true')
+  })
+
+  it('creates the shared versioned request with one selected page', () => {
+    const plan = compileRecipePlan(NINE_STEP_RECIPE)
+
+    const request = createRecipeIllustrationRequestV1(
+      plan,
+      'pixel-person',
+      [2],
+      'web-preview-test',
+    )
+
+    expect(request).toMatchObject({
+      contractVersion: 1,
+      recipe: {
+        id: 'web-preview-test',
+        title: '番茄鸡蛋面',
+      },
+      styleId: 'pixel-person',
+      pageIndexes: [2],
+    })
+    expect(request.recipe.ingredients[0]).toEqual({
+      name: '番茄',
+      amount: '2个',
+    })
+    expect(request.recipe.steps[0]).toMatchObject({
+      order: 1,
+      action: '番茄洗净切块。',
+    })
   })
 })
