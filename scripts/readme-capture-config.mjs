@@ -27,7 +27,7 @@ export const captures = [
     route: '/demo',
     width: 412,
     height: 915,
-    waitFor: '.app-shell',
+    waitFor: '#app-scene',
     clip: { x: 0, y: 0, width: 412, height: 915 },
   },
 ]
