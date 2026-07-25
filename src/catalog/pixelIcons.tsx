@@ -132,11 +132,28 @@ export const PIXEL_ICON_SVGS = {
 
 export type PixelIconName = keyof typeof PIXEL_ICON_SVGS
 
+const svgObjectUrls = new Map<string, string>()
+
 export function svgDataUrl(svgSource: string) {
   const standaloneSvg = svgSource.replace(
     '<svg ',
     '<svg xmlns="http://www.w3.org/2000/svg" ',
   )
+
+  if (
+    typeof URL.createObjectURL === 'function' &&
+    typeof Blob === 'function'
+  ) {
+    const existing = svgObjectUrls.get(standaloneSvg)
+    if (existing) return existing
+
+    const objectUrl = URL.createObjectURL(
+      new Blob([standaloneSvg], { type: 'image/svg+xml;charset=utf-8' }),
+    )
+    svgObjectUrls.set(standaloneSvg, objectUrl)
+    return objectUrl
+  }
+
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(standaloneSvg)}`
 }
 

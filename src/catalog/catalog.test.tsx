@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const catalogRoot = resolve(process.cwd(), 'src/catalog')
 const fixturePath = resolve(process.cwd(), 'src/fixtures/goldenFixture.ts')
@@ -170,5 +170,38 @@ describe('prototype-owned visual catalogs', () => {
     expect(RECIPES).toHaveLength(5)
     expect(SHOP_ITEMS).toHaveLength(5)
     expect(MESSAGES).toHaveLength(3)
+  })
+})
+
+describe('SVG image delivery', () => {
+  it('creates one reusable blob URL when the browser supports object URLs', async () => {
+    const originalCreateObjectURL = Object.getOwnPropertyDescriptor(
+      URL,
+      'createObjectURL',
+    )
+    const createObjectURL = vi.fn(
+      (_blob: Blob) => 'blob:fridge-elf/test-icon',
+    )
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectURL,
+    })
+
+    try {
+      const { svgDataUrl } = await import('./pixelIcons')
+      const source =
+        '<svg viewBox="0 0 1 1"><rect width="1" height="1"/></svg>'
+
+      expect(svgDataUrl(source)).toBe('blob:fridge-elf/test-icon')
+      expect(svgDataUrl(source)).toBe('blob:fridge-elf/test-icon')
+      expect(createObjectURL).toHaveBeenCalledTimes(1)
+      expect(createObjectURL.mock.calls[0]?.[0]).toBeInstanceOf(Blob)
+    } finally {
+      if (originalCreateObjectURL) {
+        Object.defineProperty(URL, 'createObjectURL', originalCreateObjectURL)
+      } else {
+        Reflect.deleteProperty(URL, 'createObjectURL')
+      }
+    }
   })
 })

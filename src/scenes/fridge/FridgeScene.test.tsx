@@ -103,7 +103,7 @@ describe('FridgeScene', () => {
     expect(card).toHaveAttribute('data-expiry-date', '2026-07-28')
     expect(card.querySelector('.food-art')).toHaveAttribute(
       'src',
-      expect.stringContaining('%3Csvg'),
+      expect.stringMatching(/^(blob:|data:image\/svg\+xml)/),
     )
   })
 
