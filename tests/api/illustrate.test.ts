@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createDemoToken,
   handleIllustrationRequest,
-} from './_lib/illustrate'
+} from '../../api/_lib/illustrate.js'
 
 const RECIPE = `# 番茄炒蛋
 食材：

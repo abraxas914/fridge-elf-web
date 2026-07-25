@@ -3,7 +3,7 @@ import {
   buildIllustrationPrompt,
   compileRecipePlan,
   isIllustrationStyleId,
-} from '../../src/illustration/recipePlan'
+} from '../../src/illustration/recipePlan.js'
 
 export interface IllustrationEnvironment {
   IMAGE_API_ENDPOINT?: string

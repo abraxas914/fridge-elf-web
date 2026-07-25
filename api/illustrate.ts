@@ -1,4 +1,4 @@
-import { handleIllustrationRequest } from './_lib/illustrate'
+import { handleIllustrationRequest } from './_lib/illustrate.js'
 
 interface NodeRequest {
   method?: string
