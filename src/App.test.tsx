@@ -85,6 +85,27 @@ describe('App', () => {
     expect(screen.getByText('• 米/藜麦')).toBeVisible()
   })
 
+  it('opens the AI recipe illustration studio from the fourth tool', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: '跳过' }))
+    fireEvent.click(screen.getByRole('tab', { name: '食谱' }))
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /AI 食谱插画/ }),
+    )
+
+    expect(screen.getByRole('dialog')).toHaveTextContent(
+      'AI 食谱插画 · IMAGE2',
+    )
+    expect(
+      screen.getByRole('button', { name: '选择食谱' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: '粘贴食谱' }))
+    expect(
+      screen.getByRole('textbox', { name: '粘贴食谱正文' }),
+    ).toBeVisible()
+  })
+
   it('sends the current mock world to online recommendation and Agent panels', async () => {
     const requester = vi.fn(
       async (input: DemoAgentInput): Promise<DemoAgentResponse> => ({

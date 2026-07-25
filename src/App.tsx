@@ -44,6 +44,7 @@ import { FridgeScene } from './scenes/fridge/FridgeScene'
 import { GOLDEN_PRESENTED_FOODS } from './scenes/fridge/foodPresentation'
 import { MealPlannerModal } from './scenes/recipe/MealPlannerModal'
 import { FavoriteRecipesModal } from './scenes/recipe/FavoriteRecipesModal'
+import { RecipeIllustrationStudioModal } from './scenes/recipe/RecipeIllustrationStudioModal'
 import {
   PotTransition,
   RecipeDetailModal,
@@ -457,6 +458,17 @@ export function App({
               />
             ),
           }
+      : state.modal?.kind === 'recipe-illustration'
+        ? {
+            title: 'AI 食谱插画 · IMAGE2',
+            content: (
+              <RecipeIllustrationStudioModal
+                recipes={favoriteRecipes}
+                illustration={runtime.recipeIllustration}
+                managed={runtime.mode === 'browser-mock'}
+              />
+            ),
+          }
       : state.modal?.kind === 'planner'
         ? {
             title: 'CAL · 周食谱规划',
@@ -680,6 +692,12 @@ export function App({
             }
             onOpenFavorites={() =>
               dispatch({ type: 'open-modal', kind: 'favorites' })
+            }
+            onOpenIllustration={() =>
+              dispatch({
+                type: 'open-modal',
+                kind: 'recipe-illustration',
+              })
             }
             onOpenAi={askRecommendation}
             onOpenAgent={askAssistant}

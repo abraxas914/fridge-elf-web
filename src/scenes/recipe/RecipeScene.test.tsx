@@ -18,11 +18,13 @@ describe('RecipeScene', () => {
   it('ports the manual Agent composer and managed recommendation tool', async () => {
     const onOpenAgent = vi.fn(async () => undefined)
     const onOpenAi = vi.fn()
+    const onOpenIllustration = vi.fn()
     render(
       <RecipeScene
         onOpenRecipe={vi.fn()}
         onOpenPlanner={vi.fn()}
         onOpenAi={onOpenAi}
+        onOpenIllustration={onOpenIllustration}
         onOpenAgent={onOpenAgent}
         onSelectTab={vi.fn()}
         onToast={vi.fn()}
@@ -32,6 +34,15 @@ describe('RecipeScene', () => {
     fireEvent.click(screen.getByRole('button', { name: /今日推荐/ }))
     expect(onOpenAi).toHaveBeenCalledOnce()
     expect(screen.getByRole('button', { name: /周规划/ })).toBeVisible()
+    fireEvent.click(
+      screen.getByRole('button', { name: /AI 食谱插画/ }),
+    )
+    expect(onOpenIllustration).toHaveBeenCalledOnce()
+    expect(
+      screen.getAllByRole('button', {
+        name: /个人收藏食谱|今日推荐|周规划|AI 食谱插画/,
+      }),
+    ).toHaveLength(4)
     fireEvent.change(screen.getByRole('textbox', { name: '向冰箱提问' }), {
       target: { value: '今晚用番茄和鸡蛋能做什么？' },
     })
