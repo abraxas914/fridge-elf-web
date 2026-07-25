@@ -4,6 +4,8 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { RecipeIllustrationPort } from '../../app/ports'
 import { RECIPES } from '../../fixtures/goldenFixture'
@@ -30,6 +32,19 @@ function illustration(): RecipeIllustrationPort {
 }
 
 describe('RecipeIllustrationStudioModal', () => {
+  it('keeps preset choices in one horizontal row above the generator', () => {
+    const css = readFileSync(
+      resolve(process.cwd(), 'src/scenes/recipe/RecipeScene.css'),
+      'utf8',
+    )
+    const sourceListRule = css.match(
+      /\.recipe-source-list\s*\{([^}]+)\}/,
+    )?.[1]
+
+    expect(sourceListRule).toContain('grid-auto-flow: column')
+    expect(sourceListRule).toContain('overflow-x: auto')
+  })
+
   it('generates one image from a selected preset recipe', async () => {
     const port = illustration()
     render(
