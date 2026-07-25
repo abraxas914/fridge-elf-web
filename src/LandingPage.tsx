@@ -1,5 +1,7 @@
 import { useEffect, useState, type MouseEvent } from 'react'
 import { LandingSection } from './landing/LandingSection'
+import { FridgeHeroSvg } from './landing/illustrations/FridgeHeroSvg'
+import { FridgeShelfSvg } from './landing/illustrations/FridgeShelfSvg'
 import { formatApkSize, type ReleaseInfo } from './release/release'
 import './LandingPage.css'
 
@@ -151,8 +153,8 @@ export function LandingPage({
             语音、视觉、触摸与手机同步。视觉识别仍在持续完善。
           </p>
         </div>
-        <div className="landing-visual-placeholder" aria-hidden="true">
-          FRIDGE ELF
+        <div className="landing-hero-visual">
+          <FridgeHeroSvg />
         </div>
       </section>
 
@@ -175,6 +177,9 @@ export function LandingPage({
           <li>出门后无法确认</li>
           <li>临期时没有提醒</li>
         </ul>
+        <div className="landing-problem-visual">
+          <FridgeShelfSvg />
+        </div>
       </LandingSection>
 
       <LandingSection
