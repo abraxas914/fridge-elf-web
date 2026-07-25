@@ -2,10 +2,9 @@ import {
   fireEvent,
   render,
   screen,
+  within,
   waitFor,
 } from '@testing-library/react'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { RecipeIllustrationPort } from '../../app/ports'
 import { RECIPES } from '../../fixtures/goldenFixture'
@@ -32,17 +31,26 @@ function illustration(): RecipeIllustrationPort {
 }
 
 describe('RecipeIllustrationStudioModal', () => {
-  it('keeps preset choices in one horizontal row above the generator', () => {
-    const css = readFileSync(
-      resolve(process.cwd(), 'src/scenes/recipe/RecipeScene.css'),
-      'utf8',
+  it('uses the shared searchable and categorized preset picker', () => {
+    render(
+      <RecipeIllustrationStudioModal
+        recipes={RECIPES}
+        illustration={illustration()}
+        managed
+      />,
     )
-    const sourceListRule = css.match(
-      /\.recipe-source-list\s*\{([^}]+)\}/,
-    )?.[1]
 
-    expect(sourceListRule).toContain('grid-auto-flow: column')
-    expect(sourceListRule).toContain('overflow-x: auto')
+    expect(screen.getByRole('searchbox', { name: '搜索食谱' })).toBeVisible()
+    expect(
+      within(screen.getByRole('combobox', { name: '食谱类别' }))
+        .getAllByRole('option'),
+    ).toHaveLength(16)
+    fireEvent.change(screen.getByRole('searchbox', { name: '搜索食谱' }), {
+      target: { value: '红烧茄子' },
+    })
+    expect(
+      screen.getByRole('button', { name: '选择红烧茄子' }),
+    ).toBeVisible()
   })
 
   it('generates one image from a selected preset recipe', async () => {
@@ -58,9 +66,11 @@ describe('RecipeIllustrationStudioModal', () => {
     expect(
       screen.getByRole('button', { name: '选择食谱' }),
     ).toHaveAttribute('aria-pressed', 'true')
-    fireEvent.click(
-      screen.getByRole('button', { name: /番茄鸡蛋轻食碗/ }),
-    )
+    fireEvent.change(screen.getByRole('searchbox', { name: '搜索食谱' }), {
+      target: { value: '红烧茄子' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '选择红烧茄子' }))
+    expect(screen.getByText('茄子 · 1400g')).toBeVisible()
     fireEvent.click(
       screen.getByRole('button', { name: '生成食谱插画' }),
     )
@@ -70,7 +80,15 @@ describe('RecipeIllustrationStudioModal', () => {
         expect.objectContaining({
           pageIndexes: [1],
           recipe: expect.objectContaining({
-            title: '番茄鸡蛋轻食碗',
+            title: '红烧茄子',
+            ingredients: expect.arrayContaining([
+              { name: '茄子', amount: '1400g' },
+            ]),
+            steps: expect.arrayContaining([
+              expect.objectContaining({
+                action: '锅中加入大豆油和鸡油加热。',
+              }),
+            ]),
           }),
         }),
       ),

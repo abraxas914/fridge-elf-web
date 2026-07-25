@@ -3,6 +3,7 @@ import type { RecipeIllustrationPort } from '../../app/ports'
 import { RecipeIllustrationPanel } from '../../features/recipeIllustration/RecipeIllustrationPanel'
 import type { RecipeIllustrationRecipe } from '../../features/recipeIllustration/types'
 import { parsePastedRecipe } from './pastedRecipe'
+import { RecipeCatalogPicker } from './RecipeCatalogPicker'
 import { toIllustrationRecipe } from './recipeContent'
 import type { Recipe } from './RecipeScene'
 
@@ -92,22 +93,11 @@ export function RecipeIllustrationStudioModal({
       </div>
 
       {mode === 'preset' ? (
-        <div aria-label="可选食谱" className="recipe-source-list">
-          {recipes.map((recipe) => (
-            <button
-              aria-pressed={recipe.id === selectedRecipe?.id}
-              className="recipe-source-option"
-              key={recipe.id}
-              type="button"
-              onClick={() => setSelectedRecipeId(recipe.id)}
-            >
-              <span>{recipe.cn}</span>
-              <small>
-                {recipe.name} · {recipe.time} MIN
-              </small>
-            </button>
-          ))}
-        </div>
+        <RecipeCatalogPicker
+          recipes={recipes}
+          selectedId={selectedRecipe?.id}
+          onSelect={(recipe) => setSelectedRecipeId(recipe.id)}
+        />
       ) : (
         <div className="recipe-paste-field">
           <label htmlFor="recipe-illustration-paste">
