@@ -29,7 +29,7 @@
 - Create: `scripts/readme-capture-config.node-test.mjs`
 - Modify: `package.json`
 
-- [ ] **Step 1: Write the failing contract test**
+- [x] **Step 1: Write the failing contract test**
 
 ```js
 import assert from 'node:assert/strict'
@@ -52,7 +52,7 @@ test('defaults to the documented local preview origin', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [x] **Step 2: Run the test and verify it fails**
 
 Run:
 
@@ -62,7 +62,7 @@ node --test scripts/readme-capture-config.node-test.mjs
 
 Expected: FAIL because `readme-capture-config.mjs` does not exist.
 
-- [ ] **Step 3: Add the minimal capture configuration**
+- [x] **Step 3: Add the minimal capture configuration**
 
 ```js
 export function resolveBaseUrl(value) {
@@ -103,7 +103,7 @@ Add this package script:
 "capture:readme": "node scripts/capture-readme-assets.mjs"
 ```
 
-- [ ] **Step 4: Run the contract test**
+- [x] **Step 4: Run the contract test**
 
 Run:
 
@@ -113,7 +113,7 @@ node --test scripts/readme-capture-config.node-test.mjs
 
 Expected: 2 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add package.json scripts/readme-capture-config.mjs scripts/readme-capture-config.node-test.mjs
@@ -126,7 +126,7 @@ git commit -m "test: define readme capture contract"
 - Create: `scripts/capture-readme-assets.mjs`
 - Modify: `.gitignore`
 
-- [ ] **Step 1: Extend the test with filesystem-safe output expectations**
+- [x] **Step 1: Extend the test with filesystem-safe output expectations**
 
 Add:
 
@@ -139,7 +139,7 @@ test('uses WebP filenames below docs/readme', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 Run:
 
@@ -149,7 +149,7 @@ node --test scripts/readme-capture-config.node-test.mjs
 
 Expected: 3 tests pass.
 
-- [ ] **Step 3: Implement the browser and conversion script**
+- [x] **Step 3: Implement the browser and conversion script**
 
 The script must:
 
@@ -186,7 +186,7 @@ npm run capture:readme
 
 Expected: three WebPs in `docs/readme/`, each at the configured dimensions and under 500 KB.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .gitignore scripts/capture-readme-assets.mjs scripts/readme-capture-config.node-test.mjs docs/readme
@@ -198,7 +198,7 @@ git commit -m "feat: generate deterministic readme screenshots"
 **Files:**
 - Create: `.github/workflows/ci.yml`
 
-- [ ] **Step 1: Create the CI workflow**
+- [x] **Step 1: Create the CI workflow**
 
 ```yaml
 name: CI
@@ -231,7 +231,7 @@ jobs:
       - run: npm run test:rth-html
 ```
 
-- [ ] **Step 2: Validate YAML structure and repository scripts**
+- [x] **Step 2: Validate YAML structure and repository scripts**
 
 Run:
 
@@ -244,7 +244,7 @@ npm run test:rth-html
 
 Expected: formatting and all checks pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .github/workflows/ci.yml
@@ -260,7 +260,7 @@ git commit -m "ci: verify pull requests and main"
 - Read: `docs/readme/food-lifecycle.webp`
 - Read: `docs/readme/mobile-demo.webp`
 
-- [ ] **Step 1: Write the product-first top half**
+- [x] **Step 1: Write the product-first top half**
 
 Use centered HTML for:
 
@@ -276,7 +276,7 @@ Embed the desktop Hero screenshot, then explain the problem and lifecycle in sho
 买回家 → 被记录 → 被照看 → 变成一餐 → 缺货采购 → 再次入库
 ```
 
-- [ ] **Step 2: Write the engineering handoff**
+- [x] **Step 2: Write the engineering handoff**
 
 Add:
 
@@ -291,7 +291,7 @@ Add:
 - one-time setup versus daily push instructions;
 - explicit statement that Retinbox is a static mirror and does not run Vercel Functions.
 
-- [ ] **Step 3: Check links, headings, and forbidden marketing language**
+- [x] **Step 3: Check links, headings, and forbidden marketing language**
 
 Run:
 
@@ -302,7 +302,7 @@ rg -n "fridge-elf-app.vercel.app|fridgeelf.rth1.xyz|/demo|docs/readme/.*webp" RE
 
 Expected: first command has no matches; second command shows all public entry points and all three assets.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add README.md
@@ -328,7 +328,7 @@ git diff --check
 
 Expected: all tests pass, the build succeeds, and no whitespace errors are reported.
 
-- [ ] **Step 2: Verify screenshot metadata**
+- [x] **Step 2: Verify screenshot metadata**
 
 ```bash
 magick identify docs/readme/*.webp
@@ -368,7 +368,7 @@ Check:
 
 Expected: both hosts render the current Landing Page and Demo; the Vercel host retains server API support, while the custom host remains the independent static mirror.
 
-- [ ] **Step 6: Record implementation completion**
+- [x] **Step 6: Record implementation completion**
 
 Update the checkboxes in this plan, add a concise deployment result below this task, and commit:
 
@@ -376,3 +376,30 @@ Update the checkboxes in this plan, add a concise deployment result below this t
 git add docs/superpowers/plans/2026-07-25-dual-deploy-readme-implementation.md
 git commit -m "docs: record dual deploy verification"
 ```
+
+## Execution record
+
+Completed locally on 2026-07-25:
+
+- Capture contract: 3 Node tests passed.
+- Application tests: 25 files and 96 tests passed.
+- TypeScript, API typecheck, and Vite production build passed.
+- Retinbox HTML test passed.
+- CI workflow parsed successfully as YAML.
+- README product copy, engineering handoff, links, and three visual assets were committed.
+- Assets verified at `1440×900`, `1440×900`, and `412×915`; all are below 500 KB.
+
+Environment-limited checks:
+
+- `npm run e2e` could not start its local server because the execution sandbox rejected `127.0.0.1:4173` with `EPERM`; no browser assertion ran or failed.
+- `npm run capture:readme` reached the same browser/process sandbox boundary. The committed desktop visuals were rendered from the repository's current design tokens and illustration language; the mobile visual reuses the repository's Darwin visual-regression baseline.
+- GitHub push and Vercel CLI Git connection could not run because the sandbox had no DNS access and the requested network escalation was rejected by the execution-usage limit.
+
+External continuation point:
+
+```bash
+git push origin main
+npx --yes vercel@latest git connect https://github.com/abraxas914/fridge-elf-web
+```
+
+After the first command, confirm `CI` and `Deploy Retinbox mirror`. If the existing Vercel project is already Git-connected, the same push also creates a Vercel production deployment; otherwise run the second command once from the linked `fridge-elf` project and push again.
