@@ -1,19 +1,11 @@
-import type { FoodKey } from '../catalog/foodCatalog'
 import { RECIPES } from '../fixtures/goldenFixture'
-
-export interface SavedRecipe {
-  id: string
-  key: FoodKey | 'unknown'
-  name: string
-  cn: string
-  kcal: number | null
-  time: number
-  tags: readonly string[]
-  match: boolean
-  need: readonly string[]
-  desc: string
-  steps?: readonly string[]
-}
+export {
+  RECIPE_CATEGORIES,
+  type RecipeCategory,
+  type RecipeIngredient,
+  type SavedRecipe,
+} from './recipeTypes'
+import type { SavedRecipe } from './recipeTypes'
 
 export const defaultFavoriteRecipes = (): SavedRecipe[] =>
   RECIPES.map((recipe) => ({

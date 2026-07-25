@@ -1,4 +1,6 @@
 import type { FoodKey } from '../catalog/foodCatalog'
+import type { SavedRecipe } from '../app/recipeTypes'
+import { DEMO_RECIPE_SEEDS } from './demoRecipeCatalog'
 
 export interface GoldenFood {
   id: string
@@ -35,7 +37,7 @@ export const GOLDEN_FOODS: readonly GoldenFood[] = [
   { id: 'food-butter', key: 'butter', name: '黄油', englishName: 'Butter', category: 'other', kcal: 717, quantity: '250g', addedDaysAgo: 10, expiresInDays: 60, expiryDate: '2026-09-22', storage: 'fridge' },
 ]
 
-export const RECIPES = [
+const LEGACY_DEMO_RECIPES = [
   {
     id: 'recipe-tomato-egg-bowl',
     key: 'tomato',
@@ -47,7 +49,17 @@ export const RECIPES = [
     match: true,
     need: ['tomato', 'egg'],
     desc: '冰箱里的番茄和鸡蛋刚好搭一碗。淋一点橄榄油，撒黑胡椒，10 分钟出锅。',
-    steps: ['番茄切块，鸡蛋打散并加少许盐。', '鸡蛋炒至凝固后盛出，再将番茄炒软。', '鸡蛋回锅翻匀，装入轻食碗并撒黑胡椒。'],
+    category: '主食',
+    ingredients: [
+      { key: 'tomato', name: '番茄' },
+      { key: 'egg', name: '鸡蛋' },
+    ],
+    steps: [
+      '番茄洗净后切成小块。',
+      '鸡蛋打散，下锅炒至凝固后盛出。',
+      '番茄炒软后放回鸡蛋，翻匀调味。',
+    ],
+    source: 'seed',
   },
   {
     id: 'recipe-veggie-noodle',
@@ -60,7 +72,19 @@ export const RECIPES = [
     match: true,
     need: ['cabbage', 'carrot', 'egg'],
     desc: '快过期的白菜别扔！切丝下锅，配胡萝卜和一颗溏心蛋，暖胃低脂。',
-    steps: ['白菜和胡萝卜切丝，鸡蛋煮成溏心蛋。', '蔬菜入锅煮软，加入面条煮熟。', '调味后装碗，放上对半切开的溏心蛋。'],
+    category: '主食',
+    ingredients: [
+      { key: 'cabbage', name: '白菜' },
+      { key: 'carrot', name: '胡萝卜' },
+      { key: 'egg', name: '鸡蛋' },
+      { key: 'noodle', name: '面条' },
+    ],
+    steps: [
+      '白菜和胡萝卜洗净后切丝。',
+      '锅中加水煮开，放入面条和蔬菜。',
+      '面条煮熟后加入鸡蛋，调味出锅。',
+    ],
+    source: 'seed',
   },
   {
     id: 'recipe-salmon-rice',
@@ -73,7 +97,18 @@ export const RECIPES = [
     match: false,
     need: ['salmon', 'cucumber', 'rice'],
     desc: '三文鱼今天到期！煎香后铺在藜麦饭上，配黄瓜片，健身党的黄金餐。',
-    steps: ['三文鱼擦干并用盐、黑胡椒调味。', '平底锅煎至两面金黄，黄瓜切片。', '谷物饭装碗，铺上三文鱼和黄瓜片。'],
+    category: '主食',
+    ingredients: [
+      { key: 'salmon', name: '三文鱼' },
+      { key: 'cucumber', name: '黄瓜' },
+      { key: 'rice', name: '谷物饭' },
+    ],
+    steps: [
+      '三文鱼擦干表面，煎至两面熟透。',
+      '黄瓜洗净后切成薄片。',
+      '谷物饭盛入碗中，铺上三文鱼和黄瓜。',
+    ],
+    source: 'seed',
   },
   {
     id: 'recipe-banana-pancake',
@@ -86,7 +121,18 @@ export const RECIPES = [
     match: true,
     need: ['banana', 'egg', 'oat'],
     desc: '香蕉快熟过头？压成泥拌燕麦粉煎成饼，甜度自带无需加糖。',
-    steps: ['香蕉压成泥，与鸡蛋搅拌均匀。', '加入燕麦粉拌成可流动面糊。', '小火将面糊两面煎至金黄。'],
+    category: '早餐',
+    ingredients: [
+      { key: 'banana', name: '香蕉' },
+      { key: 'egg', name: '鸡蛋' },
+      { name: '燕麦粉' },
+    ],
+    steps: [
+      '香蕉压成细泥。',
+      '加入鸡蛋和燕麦粉，搅拌成面糊。',
+      '面糊分次下锅，小火煎至两面定型。',
+    ],
+    source: 'seed',
   },
   {
     id: 'recipe-hearty-stew',
@@ -99,9 +145,26 @@ export const RECIPES = [
     match: false,
     need: ['potato', 'beef', 'carrot', 'onion'],
     desc: '周末慢炖锅版本，土豆、胡萝卜、洋葱和牛肉一起炖到入口即化。',
-    steps: ['牛肉切块煎至上色，蔬菜切成大块。', '洋葱炒香后加入牛肉、土豆和胡萝卜。', '加水没过食材，小火炖至牛肉软烂并调味。'],
+    category: '炖菜',
+    ingredients: [
+      { key: 'potato', name: '土豆' },
+      { key: 'beef', name: '牛肉' },
+      { key: 'carrot', name: '胡萝卜' },
+      { key: 'onion', name: '洋葱' },
+    ],
+    steps: [
+      '牛肉切块后煎至表面上色。',
+      '土豆、胡萝卜和洋葱切块。',
+      '全部食材放入锅中，小火炖至软烂。',
+    ],
+    source: 'seed',
   },
-] as const
+] satisfies readonly SavedRecipe[]
+
+export const RECIPES: readonly SavedRecipe[] = [
+  ...LEGACY_DEMO_RECIPES,
+  ...DEMO_RECIPE_SEEDS,
+]
 
 export const SHOP_ITEMS = [
   { id: 'shop-milk', key: 'milk', name: '牛奶', reason: 'ALMOST OUT · 剩 1L', quantity: '2L', done: false },
