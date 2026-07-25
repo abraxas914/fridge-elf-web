@@ -70,6 +70,7 @@ const FALLBACK_DIAGNOSTIC_CODES = new Set([
   'DEMO_SESSION_REQUIRED',
   'DEMO_RATE_LIMITED',
   'AGENT_UNAVAILABLE',
+  'CONTEXT_TOO_LARGE',
   'TIMEOUT',
   'NETWORK_ERROR',
   'ABORTED',
@@ -327,6 +328,7 @@ export function createDemoRuntime(
       inventory: presented,
       planner,
       missingItems,
+      profile: input.profile,
     })
   }
   return {

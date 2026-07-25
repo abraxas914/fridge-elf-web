@@ -116,6 +116,41 @@ describe('network diagnostics core', () => {
     )
   })
 
+  it('records only safe Context V2 budget metadata', () => {
+    const store = createNetworkDiagnosticsStore({
+      enabled: () => true,
+    })
+    const trace = beginNetworkRequest(
+      'agent',
+      'https://example.test/api/demo/agent',
+      store,
+      () => 1_000,
+    )
+
+    trace.context({
+      contextVersion: 2,
+      serializedBytes: 7_842,
+      inventoryCount: 18,
+      plannedMealCount: 2,
+      missingItemCount: 1,
+      recipeCount: 5,
+      truncated: false,
+      omittedCount: 0,
+    })
+
+    expect(store.getSnapshot().events[1]).toMatchObject({
+      stage: 'context',
+      contextMeta: {
+        contextVersion: 2,
+        serializedBytes: 7_842,
+        inventoryCount: 18,
+        recipeCount: 5,
+        truncated: false,
+      },
+    })
+    expect(store.report()).not.toContain('番茄')
+  })
+
   it('aborts through AbortController without AbortSignal.timeout', async () => {
     vi.useFakeTimers()
     try {

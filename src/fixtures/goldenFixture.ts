@@ -47,6 +47,7 @@ export const RECIPES = [
     match: true,
     need: ['tomato', 'egg'],
     desc: '冰箱里的番茄和鸡蛋刚好搭一碗。淋一点橄榄油，撒黑胡椒，10 分钟出锅。',
+    steps: ['番茄切块，鸡蛋打散并加少许盐。', '鸡蛋炒至凝固后盛出，再将番茄炒软。', '鸡蛋回锅翻匀，装入轻食碗并撒黑胡椒。'],
   },
   {
     id: 'recipe-veggie-noodle',
@@ -59,6 +60,7 @@ export const RECIPES = [
     match: true,
     need: ['cabbage', 'carrot', 'egg'],
     desc: '快过期的白菜别扔！切丝下锅，配胡萝卜和一颗溏心蛋，暖胃低脂。',
+    steps: ['白菜和胡萝卜切丝，鸡蛋煮成溏心蛋。', '蔬菜入锅煮软，加入面条煮熟。', '调味后装碗，放上对半切开的溏心蛋。'],
   },
   {
     id: 'recipe-salmon-rice',
@@ -71,6 +73,7 @@ export const RECIPES = [
     match: false,
     need: ['salmon', 'cucumber', 'rice'],
     desc: '三文鱼今天到期！煎香后铺在藜麦饭上，配黄瓜片，健身党的黄金餐。',
+    steps: ['三文鱼擦干并用盐、黑胡椒调味。', '平底锅煎至两面金黄，黄瓜切片。', '谷物饭装碗，铺上三文鱼和黄瓜片。'],
   },
   {
     id: 'recipe-banana-pancake',
@@ -83,6 +86,7 @@ export const RECIPES = [
     match: true,
     need: ['banana', 'egg', 'oat'],
     desc: '香蕉快熟过头？压成泥拌燕麦粉煎成饼，甜度自带无需加糖。',
+    steps: ['香蕉压成泥，与鸡蛋搅拌均匀。', '加入燕麦粉拌成可流动面糊。', '小火将面糊两面煎至金黄。'],
   },
   {
     id: 'recipe-hearty-stew',
@@ -95,6 +99,7 @@ export const RECIPES = [
     match: false,
     need: ['potato', 'beef', 'carrot', 'onion'],
     desc: '周末慢炖锅版本，土豆、胡萝卜、洋葱和牛肉一起炖到入口即化。',
+    steps: ['牛肉切块煎至上色，蔬菜切成大块。', '洋葱炒香后加入牛肉、土豆和胡萝卜。', '加水没过食材，小火炖至牛肉软烂并调味。'],
   },
 ] as const
 

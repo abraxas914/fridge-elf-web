@@ -16,10 +16,28 @@ const locationFor = (origin: string) => {
 }
 
 const snapshot: DemoWorldSnapshot = {
+  contextVersion: 2,
   inventory: [],
   plannedMeals: [],
   missingItems: [],
   availableRecipes: [],
+  preferences: {
+    living: 'solo',
+    taste: 'clean',
+    fitness: 'balance',
+    routine: 'normal',
+    health: '',
+  },
+  contextMeta: {
+    contextVersion: 2,
+    serializedBytes: 238,
+    inventoryCount: 0,
+    plannedMealCount: 0,
+    missingItemCount: 0,
+    recipeCount: 0,
+    truncated: false,
+    omittedCount: 0,
+  },
 }
 
 function memoryStorage() {
@@ -535,6 +553,9 @@ describe('browser demo agent API', () => {
 
     const report = networkDiagnostics.report()
     expect(report).toContain('"operation": "agent"')
+    expect(report).toContain('"stage": "context"')
+    expect(report).toContain('"serializedBytes": 238')
+    expect(report).toContain('"truncated": false')
     expect(report).not.toContain('opaque-session-token')
     expect(report).not.toContain('今晚吃什么')
     expect(report).not.toContain('authorization')

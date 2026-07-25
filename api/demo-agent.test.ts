@@ -10,25 +10,81 @@ const environment = {
 }
 
 const snapshot = {
+  contextVersion: 2,
   inventory: [
     {
+      id: 'food-tomato',
       name: '番茄',
+      englishName: 'Tomato',
       quantity: '4个',
       category: 'ingredient',
+      kcal: 18,
+      storage: 'fridge',
+      expiryDate: '2026-07-25',
+      expiresInDays: 1,
+      addedDate: '2026-07-23',
+      addedDaysAgo: 2,
+      batchCount: 1,
+      status: 'fresh',
       expiryLevel: 'urgent',
     },
     {
+      id: 'food-egg',
       name: '鸡蛋',
+      englishName: 'Egg',
       quantity: '10个',
       category: 'other',
+      kcal: 155,
+      storage: 'fridge',
+      expiryDate: '2026-08-13',
+      expiresInDays: 20,
+      addedDate: '2026-07-22',
+      addedDaysAgo: 3,
+      batchCount: 1,
+      status: 'fresh',
       expiryLevel: 'normal',
     },
   ],
-  plannedMeals: [],
+  plannedMeals: [
+    {
+      day: 'tue',
+      meal: 'breakfast',
+      recipeId: 'recipe-tomato-egg-bowl',
+      recipeName: '番茄鸡蛋轻食碗',
+    },
+  ],
   missingItems: ['燕麦'],
   availableRecipes: [
-    { id: 'recipe-tomato-egg-bowl', name: '番茄鸡蛋轻食碗' },
+    {
+      id: 'recipe-tomato-egg-bowl',
+      name: '番茄鸡蛋轻食碗',
+      englishName: 'TOMATO EGG BOWL',
+      description: '优先消耗临期番茄的快手菜。',
+      kcal: 320,
+      timeMinutes: 15,
+      tags: ['轻食', '高蛋白'],
+      requiredIngredients: ['tomato', 'egg'],
+      steps: ['番茄切块，鸡蛋打散。', '先炒鸡蛋，再与番茄翻炒。'],
+      inventoryMatch: true,
+    },
   ],
+  preferences: {
+    living: 'family',
+    taste: 'clean',
+    fitness: 'balance',
+    routine: 'quick',
+    health: '乳糖不耐',
+  },
+  contextMeta: {
+    contextVersion: 2,
+    serializedBytes: 1_842,
+    inventoryCount: 2,
+    plannedMealCount: 1,
+    missingItemCount: 1,
+    recipeCount: 1,
+    truncated: false,
+    omittedCount: 0,
+  },
 }
 
 function authorizedRequest(
@@ -89,10 +145,19 @@ describe('stateless demo agent BFF', () => {
     })
   })
 
-  it('rejects oversized messages and malformed snapshots before upstream IO', async () => {
+  it('accepts detailed questions up to 4,000 characters and rejects larger ones', async () => {
+    const acceptedFetcher = vi.fn().mockResolvedValue(
+      gatewayResponse(JSON.stringify({ answer: '已收到详细问题。' })),
+    )
+    const accepted = await handleDemoAgentRequest(
+      authorizedRequest({ message: '问'.repeat(4_000), snapshot }),
+      environment,
+      'agent',
+      acceptedFetcher,
+    )
     const fetcher = vi.fn()
     const oversized = await handleDemoAgentRequest(
-      authorizedRequest({ message: '问'.repeat(801), snapshot }),
+      authorizedRequest({ message: '问'.repeat(4_001), snapshot }),
       environment,
       'agent',
       fetcher,
@@ -107,8 +172,33 @@ describe('stateless demo agent BFF', () => {
       fetcher,
     )
 
+    expect(accepted.status).toBe(200)
+    expect(acceptedFetcher).toHaveBeenCalledOnce()
     expect(oversized.status).toBe(400)
     expect(malformed.status).toBe(400)
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
+  it('returns an explicit error when Context V2 exceeds 128 KiB', async () => {
+    const fetcher = vi.fn()
+    const response = await handleDemoAgentRequest(
+      authorizedRequest({
+        message: '今晚吃什么？',
+        snapshot,
+        padding: '文'.repeat(50_000),
+      }),
+      environment,
+      'agent',
+      fetcher,
+    )
+
+    expect(response.status).toBe(413)
+    expect(await response.json()).toEqual({
+      error: {
+        code: 'CONTEXT_TOO_LARGE',
+        message: '模拟世界数据超过 128KB，请缩小后重试',
+      },
+    })
     expect(fetcher).not.toHaveBeenCalled()
   })
 
@@ -168,6 +258,42 @@ describe('stateless demo agent BFF', () => {
     expect(upstreamBody.stream).toBe(false)
     expect(upstreamBody.messages[0].content).toContain('只读')
     expect(upstreamBody.messages[1].content).toContain('番茄')
+    expect(upstreamBody.messages[1].content).toContain('乳糖不耐')
+    expect(upstreamBody.messages[1].content).toContain('番茄切块')
+    expect(upstreamBody.messages[1].content).toContain('"meal":"breakfast"')
+    expect(upstreamBody.messages[1].content).toContain('"truncated":false')
+  })
+
+  it('keeps up to five detailed suggestions and notices', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      gatewayResponse(
+        JSON.stringify({
+          answer: '详'.repeat(2_000),
+          suggestions: Array.from({ length: 6 }, (_, index) => ({
+            title: `建议 ${index + 1}`,
+            reason: `结合临期、口味和计划说明 ${index + 1}`.repeat(8),
+            recipeId: 'recipe-tomato-egg-bowl',
+          })),
+          notices: Array.from(
+            { length: 6 },
+            (_, index) => `提醒 ${index + 1}`,
+          ),
+        }),
+      ),
+    )
+
+    const response = await handleDemoAgentRequest(
+      authorizedRequest({ message: '详细规划一下', snapshot }),
+      environment,
+      'agent',
+      fetcher,
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.answer.length).toBeGreaterThan(1_200)
+    expect(payload.suggestions).toHaveLength(5)
+    expect(payload.notices).toHaveLength(5)
   })
 
   it('drops recipe IDs not present in the submitted world snapshot', async () => {

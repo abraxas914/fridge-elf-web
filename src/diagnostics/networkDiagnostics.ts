@@ -7,6 +7,7 @@ export type NetworkOperation =
 
 export type NetworkStage =
   | 'start'
+  | 'context'
   | 'response'
   | 'parse'
   | 'success'
@@ -21,6 +22,18 @@ export interface NetworkDiagnosticEvent {
   durationMs?: number
   status?: number
   code?: string
+  contextMeta?: NetworkContextMeta
+}
+
+export interface NetworkContextMeta {
+  contextVersion: 2
+  serializedBytes: number
+  inventoryCount: number
+  plannedMealCount: number
+  missingItemCount: number
+  recipeCount: number
+  truncated: boolean
+  omittedCount: number
 }
 
 export interface NetworkDiagnosticsSnapshot {
@@ -201,6 +214,18 @@ export function beginNetworkRequest(
   record('start')
   return {
     requestId,
+    context(contextMeta: NetworkContextMeta) {
+      const current = now()
+      store.record({
+        requestId,
+        operation,
+        stage: 'context',
+        target: safeTarget,
+        timestamp: new Date(current).toISOString(),
+        durationMs: Math.max(0, current - startedAt),
+        contextMeta: { ...contextMeta },
+      })
+    },
     parse() {
       record('parse')
     },

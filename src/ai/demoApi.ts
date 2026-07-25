@@ -7,6 +7,7 @@ import {
   beginNetworkRequest,
   createTimeoutSignal,
   isSafeNetworkRequestId,
+  type NetworkContextMeta,
   type NetworkOperation,
 } from '../diagnostics/networkDiagnostics'
 
@@ -63,6 +64,7 @@ const PUBLIC_ERROR_CODES = new Set([
   'DEMO_SESSION_REQUIRED',
   'DEMO_RATE_LIMITED',
   'AGENT_UNAVAILABLE',
+  'CONTEXT_TOO_LARGE',
   'TRANSCRIPTION_UNAVAILABLE',
   'IMAGE_UNAVAILABLE',
   'TIMEOUT',
@@ -116,8 +118,10 @@ async function managedFetch(
   init: RequestInit,
   timeoutMs: number,
   fetcher: Fetcher,
+  contextMeta?: NetworkContextMeta,
 ) {
   const trace = beginNetworkRequest(operation, url)
+  if (contextMeta) trace.context(contextMeta)
   const timeout = createTimeoutSignal(timeoutMs)
   const headers = Object.fromEntries(new Headers(init.headers))
   headers['x-request-id'] = trace.requestId
@@ -345,6 +349,7 @@ async function requestDemoAgentWithSessionRetry(
       },
       REQUEST_TIMEOUT_MS,
       fetcher,
+      input.snapshot.contextMeta,
     )
     if (!response.ok) {
       const fallback =

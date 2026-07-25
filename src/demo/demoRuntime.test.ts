@@ -15,7 +15,13 @@ const releasedContext = {
     expiryDate: food.expiryDate,
     status: food.status,
   })),
-  profile: {},
+  profile: {
+    living: 'family',
+    taste: 'hunan',
+    fitness: 'light',
+    routine: 'quick',
+    health: '海鲜过敏',
+  },
   planner: emptyPlanner(),
   missingItems: [] as string[],
 }
@@ -148,13 +154,35 @@ describe('managed Web Demo runtime', () => {
           mode: 'agent',
           message: '今晚吃什么？',
           snapshot: {
+            contextVersion: 2,
             inventory: expect.arrayContaining([
               expect.objectContaining({
                 name: '番茄',
+                expiryDate: '2026-07-25',
+                expiresInDays: expect.any(Number),
                 expiryLevel: 'urgent',
               }),
             ]),
             missingItems: [],
+            availableRecipes: expect.arrayContaining([
+              expect.objectContaining({
+                id: 'recipe-tomato-egg-bowl',
+                steps: expect.arrayContaining([
+                  expect.stringContaining('番茄'),
+                ]),
+              }),
+            ]),
+            preferences: {
+              living: 'family',
+              taste: 'hunan',
+              fitness: 'light',
+              routine: 'quick',
+              health: '海鲜过敏',
+            },
+            contextMeta: expect.objectContaining({
+              truncated: false,
+              omittedCount: 0,
+            }),
           },
         })
         return {
