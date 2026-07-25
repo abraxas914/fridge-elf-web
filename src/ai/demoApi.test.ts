@@ -454,6 +454,59 @@ describe('browser demo agent API', () => {
     })
   })
 
+  it('refreshes a rejected cached session once and retries Agent', async () => {
+    const storage = memoryStorage()
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          token: 'stale-session-token',
+          expiresAt: '2026-07-25T14:00:00.000Z',
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json(
+          {
+            error: {
+              code: 'DEMO_SESSION_REQUIRED',
+              message: '演示会话已失效',
+            },
+          },
+          { status: 401 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          token: 'fresh-session-token',
+          expiresAt: '2026-07-25T14:00:00.000Z',
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({ answer: '新会话已恢复。' }),
+      )
+
+    await expect(
+      requestDemoAgent(
+        { mode: 'agent', message: '今晚吃什么？', snapshot },
+        {
+          fetcher,
+          storage,
+          location: locationFor(
+            'https://fridge-elf-app.vercel.app',
+          ),
+          now: () => Date.UTC(2026, 6, 25, 12),
+        },
+      ),
+    ).resolves.toMatchObject({ answer: '新会话已恢复。' })
+
+    expect(fetcher).toHaveBeenCalledTimes(4)
+    expect(fetcher.mock.calls[1]?.[1]?.headers.authorization).toBe(
+      'Bearer stale-session-token',
+    )
+    expect(fetcher.mock.calls[3]?.[1]?.headers.authorization).toBe(
+      'Bearer fresh-session-token',
+    )
+  })
+
   it('records redacted diagnostics without bearer tokens or request bodies', async () => {
     window.history.replaceState({}, '', '/demo?debug=network')
     const storage = memoryStorage()

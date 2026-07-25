@@ -300,6 +300,19 @@ export async function requestDemoAgent(
   input: DemoAgentInput,
   options: DemoRequestOptions = {},
 ) {
+  return requestDemoAgentWithSessionRetry(input, options, true)
+}
+
+function clearStoredSession(storage: StorageLike) {
+  if (storage.removeItem) storage.removeItem(SESSION_STORAGE_KEY)
+  else storage.setItem(SESSION_STORAGE_KEY, '')
+}
+
+async function requestDemoAgentWithSessionRetry(
+  input: DemoAgentInput,
+  options: DemoRequestOptions,
+  allowSessionRetry: boolean,
+) {
   const fetcher = options.fetcher ?? fetch
   const location = options.location ?? browserLocation()
   const token = await getDemoSession(options)
@@ -342,6 +355,14 @@ export async function requestDemoAgent(
             : 'AGENT_UNAVAILABLE'
       const code = await responseErrorCode(response, fallback)
       trace.failure(code, response.status)
+      if (response.status === 401 && allowSessionRetry) {
+        clearStoredSession(options.storage ?? browserStorage())
+        return requestDemoAgentWithSessionRetry(
+          input,
+          options,
+          false,
+        )
+      }
       throw new DemoApiError(
         code,
         response.status,
