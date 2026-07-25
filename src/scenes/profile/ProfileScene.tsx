@@ -1,18 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
-import type {
-  CredentialPort,
-  StateStoragePort,
-} from '../../app/ports'
-import { createBrowserCredentialMock } from '../../bridge/browserMock'
+import { useEffect, useState } from 'react'
+import type { StateStoragePort } from '../../app/ports'
 import { PixelIcon, type PixelIconName } from '../../catalog/pixelIcons'
-import {
-  CredentialCenter,
-  credentialSummaryLabel,
-} from '../../features/credentials/CredentialCenter'
-import type {
-  AiCapability,
-  CredentialSummaries,
-} from '../../features/credentials/types'
 import './ProfileScene.css'
 
 type LivingMode = 'solo' | 'family' | 'roomie'
@@ -30,10 +18,6 @@ interface ProfileState {
 }
 
 interface ProfileSceneProps {
-  active?: boolean
-  credentials?: CredentialPort
-  openCredentialCapability?: AiCapability | null
-  onToast?: (message: string) => void
   storage?: StateStoragePort
 }
 
@@ -47,23 +31,6 @@ const defaults: ProfileState = {
   cameraScan: true,
   nightDim: false,
   agentEnabled: true,
-}
-
-const EMPTY_CREDENTIAL_SUMMARIES: CredentialSummaries = {
-  assistant: {
-    capability: 'assistant',
-    status: 'not_configured',
-    providerId: '',
-    providerLabel: '',
-    modelId: '',
-  },
-  'recipe-illustration': {
-    capability: 'recipe-illustration',
-    status: 'not_configured',
-    providerId: '',
-    providerLabel: '',
-    modelId: '',
-  },
 }
 
 function loadProfile(storage: Pick<Storage, 'getItem'> = localStorage) {
@@ -105,19 +72,9 @@ function ChoiceGroup({
 }
 
 export function ProfileScene({
-  active = true,
-  credentials,
-  openCredentialCapability = null,
-  onToast = () => undefined,
   storage = localStorage,
 }: ProfileSceneProps = {}) {
-  const credentialsRef = useRef(
-    credentials ?? createBrowserCredentialMock(),
-  )
   const [profile, setProfile] = useState(() => loadProfile(storage))
-  const [credentialSummaries, setCredentialSummaries] =
-    useState<CredentialSummaries>(EMPTY_CREDENTIAL_SUMMARIES)
-  const [showCredentialCenter, setShowCredentialCenter] = useState(false)
   const update = <K extends keyof ProfileState>(
     key: K,
     value: ProfileState[K],
@@ -126,41 +83,6 @@ export function ProfileScene({
   useEffect(() => {
     storage.setItem('fridge-profile-v1', JSON.stringify(profile))
   }, [profile, storage])
-
-  useEffect(() => {
-    if (!active) return
-    let mounted = true
-    void credentialsRef.current.getSummaries().then((summaries) => {
-      if (mounted) setCredentialSummaries(summaries)
-    }).catch(() => undefined)
-    return () => {
-      mounted = false
-    }
-  }, [active])
-
-  useEffect(() => {
-    if (active && openCredentialCapability) {
-      setShowCredentialCenter(true)
-    }
-  }, [active, openCredentialCapability])
-
-  if (showCredentialCenter) {
-    return (
-      <section
-        className="tab active profile-scene"
-        data-tab="me"
-        data-testid="me-scene"
-      >
-        <CredentialCenter
-          credentials={credentialsRef.current}
-          initialCapability={openCredentialCapability ?? undefined}
-          onBack={() => setShowCredentialCenter(false)}
-          onToast={onToast}
-          onSummariesChange={setCredentialSummaries}
-        />
-      </section>
-    )
-  }
 
   return (
     <section
@@ -177,23 +99,6 @@ export function ProfileScene({
           <p>欢迎回来，今天也照顾好自己。</p>
           <span>“好好吃饭是爱自己的开始”</span>
         </div>
-      </div>
-
-      <div className="profile-card credential-entry-card">
-        <button
-          className="credential-entry"
-          type="button"
-          onClick={() => setShowCredentialCenter(true)}
-        >
-          <PixelIcon name="bot" className="credential-entry-icon" />
-          <span className="credential-entry-copy">
-            <b>密钥配置</b>
-            <span>智能助手与食谱插画</span>
-          </span>
-          <span className="credential-entry-status">
-            {credentialSummaryLabel(credentialSummaries)}
-          </span>
-        </button>
       </div>
 
       <div className="profile-card">

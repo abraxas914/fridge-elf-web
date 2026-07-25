@@ -29,7 +29,7 @@ describe('RecipeScene', () => {
       />,
     )
     expect(screen.getByRole('button', { name: /个人收藏食谱/ })).toBeVisible()
-    fireEvent.click(screen.getByRole('button', { name: /AI 智能推荐/ }))
+    fireEvent.click(screen.getByRole('button', { name: /今日推荐/ }))
     expect(onOpenAi).toHaveBeenCalledOnce()
     expect(screen.getByRole('button', { name: /周规划/ })).toBeVisible()
     fireEvent.change(screen.getByRole('textbox', { name: '向冰箱提问' }), {
@@ -58,6 +58,8 @@ describe('RecipeScene', () => {
     fireEvent.click(screen.getByRole('button', { name: /周规划/ }))
     expect(onOpenFavorites).toHaveBeenCalledOnce()
     expect(onOpenPlanner).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: /今日推荐/ }))
+      .not.toBeInTheDocument()
     expect((window as unknown as { NativeBridge?: unknown }).NativeBridge).toBeUndefined()
   })
 })

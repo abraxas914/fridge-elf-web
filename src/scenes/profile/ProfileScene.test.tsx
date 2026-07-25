@@ -1,32 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
-import type { CredentialPort } from '../../app/ports'
-import type { CredentialSummaries } from '../../features/credentials/types'
+import { describe, expect, it } from 'vitest'
 import { ProfileScene } from './ProfileScene'
 import { createMemoryStorage } from '../../demo/memoryStorage'
-
-function credentials(): CredentialPort {
-  return {
-    getSummaries: vi.fn(async (): Promise<CredentialSummaries> => ({
-      assistant: {
-        capability: 'assistant',
-        status: 'not_configured',
-        providerId: '',
-        providerLabel: '',
-        modelId: '',
-      },
-      'recipe-illustration': {
-        capability: 'recipe-illustration',
-        status: 'not_configured',
-        providerId: '',
-        providerLabel: '',
-        modelId: '',
-      },
-    })),
-    saveConfig: vi.fn(),
-    removeConfig: vi.fn(),
-  }
-}
 
 describe('ProfileScene', () => {
   it('persists preferences into the injected demo store', () => {
@@ -40,29 +15,16 @@ describe('ProfileScene', () => {
     ).toMatchObject({ fitness: 'gain' })
   })
 
-  it('shows one concise credential entry before living preferences', async () => {
-    const { container } = render(
-      <ProfileScene credentials={credentials()} onToast={vi.fn()} />,
-    )
-    expect(
-      await screen.findByRole('button', { name: /密钥配置/ }),
-    ).toHaveTextContent('2 项待配置')
-    expect(container.querySelectorAll('.profile-card')[0]).toHaveClass(
-      'credential-entry-card',
-    )
-    expect(
-      screen.queryByText(/BYOK|Image2|Web storage|请求端点/i),
-    ).toBeNull()
-  })
+  it('keeps product preferences without exposing BYOK configuration', () => {
+    render(<ProfileScene storage={createMemoryStorage()} />)
 
-  it('opens the unified center with both capability rows', async () => {
-    render(<ProfileScene credentials={credentials()} onToast={vi.fn()} />)
-    fireEvent.click(
-      await screen.findByRole('button', { name: /密钥配置/ }),
-    )
-    expect(screen.getByRole('heading', { name: '密钥配置' })).toBeVisible()
-    expect(screen.getByRole('button', { name: /智能助手/ })).toBeVisible()
-    expect(screen.getByRole('button', { name: /食谱插画/ })).toBeVisible()
+    expect(screen.getByText('居住模式')).toBeVisible()
+    expect(screen.getByText('口味偏好')).toBeVisible()
+    expect(screen.getByText('病史 / 过敏源 / 忌口')).toBeVisible()
+    expect(screen.queryByText('密钥配置')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/智能助手与食谱插画/),
+    ).not.toBeInTheDocument()
   })
 
   it('ports the exact default living mode and resident choices', () => {

@@ -61,7 +61,6 @@ import {
   createShopItem,
   initialShopItems,
 } from './scenes/shop/ShoppingScene'
-import type { AiCapability } from './features/credentials/types'
 
 function localDateString(date: Date) {
   return [
@@ -106,8 +105,6 @@ export function App({
       ? { connected: true, detail: 'BROWSER MOCK' }
       : { connected: false, detail: '连接中' },
   )
-  const [credentialTarget, setCredentialTarget] =
-    useState<AiCapability | null>(null)
   const [shoppingItems, setShoppingItems] = useState(initialShopItems)
   const [favoriteRecipes, setFavoriteRecipes] =
     useState<SavedRecipe[]>(() =>
@@ -272,8 +269,8 @@ export function App({
   )
 
   const assistantContext = useCallback(
-    (question: string, intent: DemoAssistantIntent = 'agent') => ({
-      intent,
+    (question: string, intent?: DemoAssistantIntent) => ({
+      ...(intent ? { intent } : {}),
       question,
       snapshot: buildDemoWorldSnapshot({
         inventory: inventoryItems,
@@ -284,31 +281,11 @@ export function App({
     [inventoryItems, missingIngredients, state.planner],
   )
 
-  const ensureAssistantConfigured = useCallback(async () => {
-    const assistant =
-      (await runtime.credentials.getSummaries()).assistant
-    if (
-      assistant.status !== 'not_configured' &&
-      assistant.status !== 'needs_attention'
-    ) {
-      setCredentialTarget(null)
-      return true
-    }
-    setCredentialTarget('assistant')
-    dispatch({ type: 'close-modal' })
-    dispatch({ type: 'select-tab', tab: 'me' })
-    dispatch({ type: 'show-toast', message: '请先配置智能助手' })
-    return false
-  }, [runtime.credentials])
-
   const startInventoryVoice = useCallback(() => {
     const speech = runtime.speech.start()
     return {
       stop: speech.stop,
       result: speech.result.then(async (text) => {
-        if (!(await ensureAssistantConfigured())) {
-          throw new Error('请先配置智能助手')
-        }
         const reply = await runtime.assistant.ask(
           assistantContext(text, 'inventory-voice'),
         )
@@ -332,14 +309,12 @@ export function App({
     }
   }, [
     assistantContext,
-    ensureAssistantConfigured,
     inventoryPort,
     runtime.assistant,
     runtime.speech,
   ])
 
   const askAssistant = useCallback(async (question: string) => {
-    if (!(await ensureAssistantConfigured())) return
     dispatch({
       type: 'open-modal',
       kind: 'assistant-loading',
@@ -361,25 +336,25 @@ export function App({
       })
       return
     }
-  }, [assistantContext, ensureAssistantConfigured, runtime.assistant])
+  }, [assistantContext, runtime.assistant])
 
   const askRecommendation = useCallback(async () => {
-    if (!(await ensureAssistantConfigured())) return
     const question = '根据当前库存和本周计划推荐现在最适合做的菜'
     dispatch({
       type: 'open-modal',
       kind: 'assistant-loading',
       payload: question,
     })
-    const reply = await runtime.assistant.ask(
-      assistantContext(question, 'recommend'),
-    )
+    const context = assistantContext(question)
+    const reply = runtime.assistant.recommend
+      ? await runtime.assistant.recommend(context)
+      : await runtime.assistant.ask(context)
     dispatch({
       type: 'open-modal',
       kind: 'assistant-result',
       payload: { question, reply },
     })
-  }, [assistantContext, ensureAssistantConfigured, runtime.assistant])
+  }, [assistantContext, runtime.assistant])
 
   const enterApp = useCallback(() => {
     tabHistory.current = []
@@ -577,6 +552,7 @@ export function App({
                       payload: recipe,
                     })
                   }
+                  readOnly={runtime.mode === 'browser-mock'}
                   onAddShopping={() => {
                     setShoppingItems((current) => [
                       ...current,
@@ -661,9 +637,6 @@ export function App({
               return {
                 stop: speech.stop,
                 result: speech.result.then(async (text) => {
-                  if (!(await ensureAssistantConfigured())) {
-                    throw new Error('请先配置智能助手')
-                  }
                   const reply = await runtime.assistant.ask(
                     assistantContext(text, 'shopping-voice'),
                   )
@@ -709,12 +682,7 @@ export function App({
           />
         ) : (
           <ProfileScene
-            credentials={runtime.credentials}
             storage={runtime.stateStorage}
-            openCredentialCapability={credentialTarget}
-            onToast={(message) =>
-              dispatch({ type: 'show-toast', message })
-            }
           />
         )}
       </AppShell>

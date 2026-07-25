@@ -1,11 +1,21 @@
 import { requestDemoAgent } from '../ai/demoApi'
+import { buildDemoWorldSnapshot } from '../ai/demoWorld'
 import type {
   DemoAgentInput,
   DemoAgentResponse,
+  DemoAssistantInventoryItem,
   DemoAssistantInput,
   DemoAssistantReply,
+  DemoCapabilities,
+  DemoWorldSnapshot,
 } from '../ai/types'
 import type { AssistantPort, CredentialPort } from '../app/ports'
+import { mapNativeInventory } from '../app/inventoryMapper'
+import { defaultFavoriteRecipes } from '../app/recipes'
+import {
+  deriveMissingIngredients,
+  loadPlanner,
+} from '../app/state'
 import {
   createBrowserDisplay,
   createBrowserMock,
@@ -33,7 +43,13 @@ export interface DemoRuntimeOptions {
 }
 
 export interface DemoRuntime extends AppRuntime {
+  assistant: ManagedAssistantPort
+  capabilities: DemoCapabilities
   dispose(): void
+}
+
+export interface ManagedAssistantPort extends AssistantPort {
+  recommend(input: unknown): Promise<DemoAssistantReply>
 }
 
 const MANAGED_PROVIDER = 'Fridge Elf Demo Gateway'
@@ -101,22 +117,57 @@ function parseVoiceItem(text: string) {
 function isDemoAssistantInput(input: unknown): input is DemoAssistantInput {
   if (!input || typeof input !== 'object') return false
   const candidate = input as Partial<DemoAssistantInput>
-  return (
-    typeof candidate.intent === 'string' &&
-    typeof candidate.question === 'string' &&
-    !!candidate.snapshot &&
-    typeof candidate.snapshot === 'object'
-  )
+  return typeof candidate.question === 'string'
+}
+
+type OnlineAssistantIntent = 'agent' | 'recommend'
+type NormalizedAssistantIntent =
+  | OnlineAssistantIntent
+  | NonNullable<DemoAssistantInput['intent']>
+type NormalizedAssistantInput = {
+  intent: NormalizedAssistantIntent
+  question: string
+  snapshot: DemoWorldSnapshot
+}
+
+async function normalizeAssistantInput(
+  input: unknown,
+  buildSnapshot: (
+    input: DemoAssistantInput,
+  ) => Promise<DemoWorldSnapshot>,
+  forcedIntent?: OnlineAssistantIntent,
+): Promise<NormalizedAssistantInput | null> {
+  if (!isDemoAssistantInput(input)) return null
+  const legacyIntent = (input as { intent?: unknown }).intent
+  return {
+    intent:
+      forcedIntent ??
+      (legacyIntent === 'recommend' || legacyIntent === 'agent'
+        ? legacyIntent
+        : input.intent ?? 'agent'),
+    question: input.question,
+    snapshot: input.snapshot ?? await buildSnapshot(input),
+  }
 }
 
 function createManagedAssistant(
   requester: DemoAgentRequester,
-): AssistantPort {
+  buildSnapshot: (
+    input: DemoAssistantInput,
+  ) => Promise<DemoWorldSnapshot>,
+): ManagedAssistantPort {
   const jobs = new Map<string, AssistantJob>()
 
-  return {
-    async ask(input): Promise<DemoAssistantReply> {
-      if (!isDemoAssistantInput(input)) {
+  const ask = async (
+    rawInput: unknown,
+    forcedIntent?: OnlineAssistantIntent,
+  ): Promise<DemoAssistantReply> => {
+      const input = await normalizeAssistantInput(
+        rawInput,
+        buildSnapshot,
+        forcedIntent,
+      )
+      if (!input) {
         throw new Error('Demo Agent 请求格式无效')
       }
       if (
@@ -128,6 +179,8 @@ function createManagedAssistant(
           recipes: [],
           shoppingItems: [parseVoiceItem(input.question)],
           suggestShopping: false,
+          existingRecipeIds: [],
+          notices: [],
         }
       }
 
@@ -159,7 +212,7 @@ function createManagedAssistant(
           shoppingItems: [],
           suggestShopping: false,
           existingRecipeIds,
-          notices: response.notices,
+          notices: response.notices ?? [],
         }
       } catch {
         return {
@@ -174,6 +227,12 @@ function createManagedAssistant(
           notices: ['当前展示的是本地演示回退结果'],
         }
       }
+  }
+
+  return {
+    ask,
+    async recommend(input) {
+      return ask(input, 'recommend')
     },
     async startAssistant(message) {
       const job: AssistantJob = {
@@ -196,20 +255,54 @@ export function createDemoRuntime(
   options: DemoRuntimeOptions = {},
 ): DemoRuntime {
   const stateStorage = createMemoryStorage()
+  const inventory = createBrowserMock(stateStorage)
   const recipeIllustration = createManagedIllustration(
     options.illustrationRequester,
   )
+  const buildSnapshot = async (input: DemoAssistantInput) => {
+    const inventoryItems = input.inventory
+      ? input.inventory.map(
+          (
+            item: DemoAssistantInventoryItem,
+            index: number,
+          ) => ({
+            id: `assistant-context-${index + 1}`,
+            ...item,
+          }),
+        )
+      : await inventory.getItems()
+    const presented = mapNativeInventory(inventoryItems, new Date())
+    const planner = input.planner ?? loadPlanner(stateStorage)
+    const missingItems =
+      input.missingItems ??
+      deriveMissingIngredients(
+        planner,
+        presented.flatMap((food) => [food.key, food.name]),
+        defaultFavoriteRecipes(),
+      )
+    return buildDemoWorldSnapshot({
+      inventory: presented,
+      planner,
+      missingItems,
+    })
+  }
   return {
-    inventory: createBrowserMock(stateStorage),
+    inventory,
     credentials: createManagedCredentials(),
     assistant: createManagedAssistant(
       options.agentRequester ?? requestDemoAgent,
+      buildSnapshot,
     ),
     recipeIllustration,
     speech: createBrowserSpeech(),
     display: createBrowserDisplay(stateStorage),
     stateStorage,
     mode: 'browser-mock',
+    capabilities: {
+      assistant: 'managed',
+      recipeIllustration: 'managed',
+      speechRecognition: 'managed',
+    },
     dispose() {
       recipeIllustration.dispose()
       stateStorage.clear()

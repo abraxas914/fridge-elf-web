@@ -1,4 +1,5 @@
 import type { AssistantReply } from '../bridge/types'
+import type { PlannerState } from '../app/types'
 
 export interface DemoWorldSnapshot {
   inventory: Array<{
@@ -36,18 +37,35 @@ export interface DemoAgentInput {
 }
 
 export type DemoAssistantIntent =
-  | 'agent'
-  | 'recommend'
   | 'inventory-voice'
   | 'shopping-voice'
 
+export interface DemoAssistantInventoryItem {
+  name: string
+  quantity: string
+  storage: string
+  addedDate: string
+  expiryDate: string
+  status: string
+}
+
 export interface DemoAssistantInput {
-  intent: DemoAssistantIntent
+  intent?: DemoAssistantIntent
   question: string
-  snapshot: DemoWorldSnapshot
+  inventory?: readonly DemoAssistantInventoryItem[]
+  profile?: unknown
+  planner?: PlannerState
+  missingItems?: readonly string[]
+  snapshot?: DemoWorldSnapshot
 }
 
 export interface DemoAssistantReply extends AssistantReply {
-  existingRecipeIds?: string[]
+  existingRecipeIds: string[]
   notices?: string[]
+}
+
+export interface DemoCapabilities {
+  assistant: 'managed'
+  recipeIllustration: 'managed'
+  speechRecognition: 'managed'
 }

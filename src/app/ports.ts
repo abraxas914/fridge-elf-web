@@ -52,6 +52,7 @@ export interface CredentialPort {
 
 export interface AssistantPort {
   ask(input: unknown): Promise<AssistantReply>
+  recommend?(input: unknown): Promise<AssistantReply>
   startAssistant(message: string): Promise<AssistantJob>
   getAssistantJob(id: string): Promise<AssistantJob>
 }

@@ -7,6 +7,7 @@ interface AssistantAnswerProps {
   reply: AssistantReply
   existingRecipes?: SavedRecipe[]
   onOpenRecipe?: (recipe: SavedRecipe) => void
+  readOnly?: boolean
   onAddShopping: () => void
   onSaveRecipe: (recipe: AssistantRecipe) => void
 }
@@ -16,6 +17,7 @@ export function AssistantAnswer({
   reply,
   existingRecipes = [],
   onOpenRecipe,
+  readOnly = false,
   onAddShopping,
   onSaveRecipe,
 }: AssistantAnswerProps) {
@@ -35,7 +37,7 @@ export function AssistantAnswer({
           ))}
         </div>
       ) : null}
-      {reply.recipes?.map((recipe) => (
+      {!readOnly ? reply.recipes?.map((recipe) => (
         <article className="assistant-recipe" key={recipe.name}>
           <h3>{recipe.name}</h3>
           <p>{recipe.reason}</p>
@@ -56,8 +58,8 @@ export function AssistantAnswer({
             ♡ 收藏这份食谱
           </button>
         </article>
-      ))}
-      {reply.shoppingItems?.length ? (
+      )) : null}
+      {!readOnly && reply.shoppingItems?.length ? (
         <div className="assistant-shopping">
           <b>建议采购</b>
           {reply.shoppingItems.map((item) => (

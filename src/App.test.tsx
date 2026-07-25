@@ -103,7 +103,7 @@ describe('App', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: '跳过' }))
     fireEvent.click(screen.getByRole('tab', { name: '食谱' }))
-    fireEvent.click(screen.getByRole('button', { name: /AI 智能推荐/ }))
+    fireEvent.click(screen.getByRole('button', { name: /今日推荐/ }))
     expect(
       await screen.findByText('在线推荐：先吃今天临期的番茄。'),
     ).toBeVisible()
@@ -166,7 +166,7 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: '跳过' }))
     fireEvent.click(screen.getByRole('tab', { name: '食谱' }))
-    fireEvent.click(screen.getByRole('button', { name: /AI 智能推荐/ }))
+    fireEvent.click(screen.getByRole('button', { name: /今日推荐/ }))
     await screen.findByRole('dialog')
 
     const hostWindow = window as Window & {

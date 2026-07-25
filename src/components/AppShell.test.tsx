@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { AppTab } from '../app/types'
 import { AppShell } from './AppShell'
 
@@ -8,10 +8,12 @@ function Harness({
   initialTab = 'fridge',
   withModal = false,
   toast = null,
+  onRestartDemo,
 }: {
   initialTab?: AppTab
   withModal?: boolean
   toast?: string | null
+  onRestartDemo?: () => void
 }) {
   const [tab, setTab] = useState<AppTab>(initialTab)
   const [modalOpen, setModalOpen] = useState(withModal)
@@ -30,6 +32,7 @@ function Harness({
       onToggleMute={() => undefined}
       onOpenPeek={() => setModalOpen(true)}
       onCloseModal={() => setModalOpen(false)}
+      onRestartDemo={onRestartDemo}
     >
       <div>ACTIVE {tab}</div>
     </AppShell>
@@ -81,5 +84,15 @@ describe('AppShell', () => {
     render(<Harness />)
     expect(screen.getByRole('button', { name: '静音' })).toBeEnabled()
     expect(screen.getByRole('button', { name: /实时查看/ })).toBeEnabled()
+  })
+
+  it('offers a deterministic demo restart action', () => {
+    const onRestartDemo = vi.fn()
+    render(<Harness onRestartDemo={onRestartDemo} />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '重新开始 Demo' }),
+    )
+    expect(onRestartDemo).toHaveBeenCalledOnce()
   })
 })

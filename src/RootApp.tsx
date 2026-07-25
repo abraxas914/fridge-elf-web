@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { createDemoRuntime } from './demo/demoRuntime'
 import { LandingPage } from './LandingPage'
 
@@ -16,15 +16,16 @@ export function RootApp() {
     key: 0,
     runtime: createDemoRuntime(),
   }))
+  const demoRuntimeRef = useRef(demoSession.runtime)
 
   useEffect(() => {
     const syncRoute = () => setRoute(routeFor(window.location.pathname))
     window.addEventListener('popstate', syncRoute)
     return () => {
       window.removeEventListener('popstate', syncRoute)
-      demoSession.runtime.dispose()
+      demoRuntimeRef.current.dispose()
     }
-  }, [demoSession.runtime])
+  }, [])
 
   const openDemo = () => {
     window.history.pushState({}, '', '/demo')
@@ -40,9 +41,11 @@ export function RootApp() {
           onRestartDemo={() =>
             setDemoSession((current) => {
               current.runtime.dispose()
+              const runtime = createDemoRuntime()
+              demoRuntimeRef.current = runtime
               return {
                 key: current.key + 1,
-                runtime: createDemoRuntime(),
+                runtime,
               }
             })
           }
