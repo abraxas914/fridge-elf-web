@@ -199,14 +199,16 @@ describe('MealPlannerModal', () => {
     expect(document.querySelectorAll('.planner-day')).toHaveLength(7)
     fireEvent.click(screen.getByRole('button', { name: /周一/ }))
     fireEvent.click(screen.getByRole('button', { name: /晚餐/ }))
-    fireEvent.click(screen.getByRole('button', { name: /三文鱼谷物碗/ }))
+    fireEvent.click(screen.getByRole('button', { name: /选择三文鱼谷物碗/ }))
+    fireEvent.click(screen.getByRole('button', { name: '加入这餐' }))
     expect(
       screen.getByRole('button', { name: /晚餐.*三文鱼谷物碗/ }),
     ).toBeVisible()
     fireEvent.click(
       screen.getByRole('button', { name: /晚餐.*三文鱼谷物碗/ }),
     )
-    fireEvent.click(screen.getByRole('button', { name: /番茄鸡蛋轻食碗/ }))
+    fireEvent.click(screen.getByRole('button', { name: /选择番茄鸡蛋轻食碗/ }))
+    fireEvent.click(screen.getByRole('button', { name: '加入这餐' }))
     fireEvent.click(
       screen.getByRole('button', { name: /晚餐.*番茄鸡蛋/ }),
     )
@@ -214,5 +216,28 @@ describe('MealPlannerModal', () => {
     expect(
       screen.getByRole('button', { name: /晚餐.*点击选择菜品/ }),
     ).toBeVisible()
+  })
+
+  it('does not assign a candidate before explicit confirmation', () => {
+    const onAssign = vi.fn()
+    render(
+      <MealPlannerModal
+        planner={emptyPlanner()}
+        missingIngredients={[]}
+        onAssign={onAssign}
+        onClear={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /周一/ }))
+    fireEvent.click(screen.getByRole('button', { name: /晚餐/ }))
+    fireEvent.click(screen.getByRole('button', { name: /选择番茄鸡蛋轻食碗/ }))
+    expect(onAssign).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: '加入这餐' }))
+    expect(onAssign).toHaveBeenCalledWith(
+      'mon',
+      'dinner',
+      expect.objectContaining({ id: 'recipe-tomato-egg-bowl' }),
+    )
   })
 })

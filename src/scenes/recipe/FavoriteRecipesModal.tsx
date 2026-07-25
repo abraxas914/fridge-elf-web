@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { SavedRecipe } from '../../app/recipes'
-import { RecipeMini } from './RecipeScene'
+import { RecipeCatalogPicker } from './RecipeCatalogPicker'
 
 interface FavoriteRecipesModalProps {
   recipes: readonly SavedRecipe[]
@@ -26,6 +26,10 @@ const blankRecipe = (): SavedRecipe => ({
 
 export function FavoriteRecipesModal(props: FavoriteRecipesModalProps) {
   const [editing, setEditing] = useState<SavedRecipe | null>(null)
+  const [selectedId, setSelectedId] = useState(props.recipes[0]?.id ?? '')
+  const selectedRecipe =
+    props.recipes.find((recipe) => recipe.id === selectedId) ??
+    props.recipes[0]
 
   if (editing) {
     return (
@@ -61,15 +65,47 @@ export function FavoriteRecipesModal(props: FavoriteRecipesModalProps) {
   return (
     <div className="favorite-recipes">
       <button className="favorite-add" type="button" onClick={() => setEditing(blankRecipe())}>＋ 新建食谱</button>
-      {props.recipes.map((recipe) => (
-        <div className="favorite-row" key={recipe.id}>
-          <RecipeMini recipe={recipe} onOpen={props.onOpen} />
-          <div>
-            <button type="button" onClick={() => setEditing({ ...recipe, need: [...recipe.need], steps: [...(recipe.steps ?? [])] })}>编辑</button>
-            <button className="danger" type="button" onClick={() => props.onDelete(recipe.id)}>删除</button>
-          </div>
+      <RecipeCatalogPicker
+        recipes={props.recipes}
+        selectedId={selectedRecipe?.id}
+        onSelect={(recipe) => setSelectedId(recipe.id)}
+        onOpen={props.onOpen}
+      />
+      {selectedRecipe && selectedRecipe.source !== 'seed' ? (
+        <div className="favorite-selected-actions">
+          <button
+            aria-label={`编辑${selectedRecipe.cn}`}
+            type="button"
+            onClick={() =>
+              setEditing({
+                ...selectedRecipe,
+                need: [...selectedRecipe.need],
+                steps: [...(selectedRecipe.steps ?? [])],
+                ingredients: selectedRecipe.ingredients?.map((item) => ({
+                  ...item,
+                })),
+              })
+            }
+          >
+            编辑
+          </button>
+          <button
+            aria-label={`删除${selectedRecipe.cn}`}
+            className="danger"
+            type="button"
+            onClick={() => {
+              props.onDelete(selectedRecipe.id)
+              setSelectedId(
+                props.recipes.find(
+                  (recipe) => recipe.id !== selectedRecipe.id,
+                )?.id ?? '',
+              )
+            }}
+          >
+            删除
+          </button>
         </div>
-      ))}
+      ) : null}
       {!props.recipes.length ? <p>还没有收藏食谱，先新建一份吧。</p> : null}
     </div>
   )

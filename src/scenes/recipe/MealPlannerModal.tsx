@@ -7,9 +7,9 @@ import {
   type PlannerMealKey,
   type PlannerState,
 } from '../../app/types'
-import { FOOD_SVGS } from '../../catalog/foodCatalog'
-import { PixelIcon, svgDataUrl } from '../../catalog/pixelIcons'
+import { PixelIcon } from '../../catalog/pixelIcons'
 import { PLANNER_DAYS } from '../../fixtures/goldenFixture'
+import { RecipeCatalogPicker } from './RecipeCatalogPicker'
 import type { Recipe } from './RecipeScene'
 
 interface MealPlannerModalProps {
@@ -36,51 +36,32 @@ export function MealPlannerModal(props: MealPlannerModalProps) {
   const [selectedDay, setSelectedDay] = useState<PlannerDayKey | null>(null)
   const [selectedMeal, setSelectedMeal] =
     useState<PlannerMealKey | null>(null)
+  const [candidateId, setCandidateId] = useState<string | null>(null)
 
   if (selectedDay && selectedMeal) {
     const day = PLANNER_DAYS.find(
       (candidate) => candidate.key === selectedDay,
     )!
     const assignedId = props.planner[selectedDay][selectedMeal]
+    const selectedRecipeId =
+      candidateId ?? assignedId ?? recipes[0]?.id
     return (
       <>
         <div className="planner-pick-title">
           为 <b>周{day.label} · {MEAL_LABELS[selectedMeal]}</b> 选菜
         </div>
-        <div className="recipe-pick-list">
-          {recipes.map((recipe) => (
-            <button
-              className={`recipe-pick-item${
-                assignedId === recipe.id ? ' selected' : ''
-              }`}
-              type="button"
-              key={recipe.id}
-              onClick={() => {
+        <RecipeCatalogPicker
+          actionLabel="加入这餐"
+          recipes={recipes}
+          selectedId={selectedRecipeId}
+          onSelect={(recipe) => setCandidateId(recipe.id)}
+          onAction={(recipe) => {
                 props.onCue?.('success')
                 props.onAssign(selectedDay, selectedMeal, recipe)
+                setCandidateId(null)
                 setSelectedMeal(null)
-              }}
-            >
-              <span className="pi-icon">
-                {recipe.key === 'unknown' ? (
-                  '菜'
-                ) : (
-                  <img
-                    src={svgDataUrl(FOOD_SVGS[recipe.key])}
-                    alt=""
-                    aria-hidden="true"
-                  />
-                )}
-              </span>
-              <span className="pi-info">
-                <span className="pi-cn">{recipe.cn}</span>
-                <span className="pi-en">
-                  {recipe.name} · {recipe.kcal ?? '--'} KCAL
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
+          }}
+        />
         {assignedId ? (
           <button
             className="planner-subaction clear"
@@ -88,6 +69,7 @@ export function MealPlannerModal(props: MealPlannerModalProps) {
             onClick={() => {
               props.onCue?.('tick')
               props.onClear(selectedDay, selectedMeal)
+              setCandidateId(null)
               setSelectedMeal(null)
             }}
           >
@@ -97,7 +79,10 @@ export function MealPlannerModal(props: MealPlannerModalProps) {
         <button
           className="planner-subaction back"
           type="button"
-          onClick={() => setSelectedMeal(null)}
+          onClick={() => {
+            setCandidateId(null)
+            setSelectedMeal(null)
+          }}
         >
           返回三餐
         </button>
@@ -127,6 +112,11 @@ export function MealPlannerModal(props: MealPlannerModalProps) {
                 key={meal}
                 onClick={() => {
                   props.onCue?.('tick')
+                  setCandidateId(
+                    props.planner[selectedDay][meal] ??
+                    recipes[0]?.id ??
+                    null,
+                  )
                   setSelectedMeal(meal)
                 }}
               >
