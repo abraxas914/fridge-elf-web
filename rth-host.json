@@ -1,0 +1,5 @@
+{
+  "outdir": "dist",
+  "site": "fridgeelf.rth1.xyz",
+  "build": "build:rth"
+}

@@ -21,4 +21,10 @@ describe('RootApp', () => {
     render(<RootApp />)
     expect(await screen.findByText('DEMO APP')).toBeVisible()
   })
+
+  it('renders the interactive application when the host canonicalizes /demo/', async () => {
+    window.history.replaceState({}, '', '/demo/')
+    render(<RootApp />)
+    expect(await screen.findByText('DEMO APP')).toBeVisible()
+  })
 })

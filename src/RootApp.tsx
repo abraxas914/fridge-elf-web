@@ -7,7 +7,7 @@ const DemoApp = lazy(() =>
 )
 
 function routeFor(pathname: string) {
-  return pathname === '/demo' ? 'demo' : 'landing'
+  return pathname.replace(/\/+$/, '') === '/demo' ? 'demo' : 'landing'
 }
 
 export function RootApp() {

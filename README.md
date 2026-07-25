@@ -43,6 +43,30 @@ DEMO_TOKEN_SECRET=...
 - `DEMO_TOKEN_SECRET`：至少 16 个随机字符，用于签发带过期时间的扫码链接。
 - `GITHUB_RELEASE_TOKEN`：可选。主仓库为私有仓库时必须配置，仅需读取 Release 的权限。
 
+## 双轨部署
+
+同一套 SPA 构建产物发布到两个相互独立的入口：
+
+- Vercel：`https://fridge-elf-app.vercel.app`
+- 热铁盒：`https://fridgeelf.rth1.xyz`
+
+热铁盒本地部署：
+
+```bash
+npm run deploy:rth
+```
+
+`rth-host.json` 固定将 `build:rth` 的 `dist/` 产物发布到热铁盒站点。
+`build:rth` 会把 JavaScript 与 CSS 内联进热铁盒专用 HTML，并额外生成
+`dist/demo/index.html` 和 `dist/404.html`。这样 `/demo` 的直接访问与刷新
+不依赖 Vercel rewrite，也不依赖热铁盒 CDN 对新哈希脚本的传播时序。
+
+自动部署时，在 GitHub 仓库的 Actions Secrets 中配置
+`RTH_API_KEY`。本地密钥只放在已被 Git 忽略的 `.env`，不得提交。
+
+两条发布通道互不跳转、互不覆盖；任何一方不可用时，另一方仍可独立
+提供 Landing Page 与静态 Demo。
+
 环境变量配置并完成 Production 部署后，用同一 secret 生成演示链接：
 
 ```bash
