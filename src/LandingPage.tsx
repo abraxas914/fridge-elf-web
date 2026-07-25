@@ -1,7 +1,10 @@
 import { useEffect, useState, type MouseEvent } from 'react'
 import { LandingSection } from './landing/LandingSection'
+import { DeviceSyncSvg } from './landing/illustrations/DeviceSyncSvg'
 import { FridgeHeroSvg } from './landing/illustrations/FridgeHeroSvg'
 import { FridgeShelfSvg } from './landing/illustrations/FridgeShelfSvg'
+import { LifecycleSvg } from './landing/illustrations/LifecycleSvg'
+import { MultimodalSvg } from './landing/illustrations/MultimodalSvg'
 import { formatApkSize, type ReleaseInfo } from './release/release'
 import './LandingPage.css'
 
@@ -206,6 +209,9 @@ export function LandingPage({
             </li>
           ))}
         </ol>
+        <div className="landing-lifecycle-visual">
+          <LifecycleSvg />
+        </div>
         <p className="landing-section-note">
           这是食材的完整生命周期，也是一份会继续流动的数据。
         </p>
@@ -230,6 +236,9 @@ export function LandingPage({
           <li>实时同步</li>
           <li>家庭共享库存</li>
         </ul>
+        <div className="landing-iot-visual">
+          <DeviceSyncSvg />
+        </div>
       </LandingSection>
 
       <LandingSection
@@ -264,6 +273,9 @@ export function LandingPage({
             <dd>在手机上完整编辑、搜索与规划</dd>
           </div>
         </dl>
+        <div className="landing-multimodal-visual">
+          <MultimodalSvg />
+        </div>
       </LandingSection>
 
       <section className="landing-capabilities" aria-label="核心能力">
