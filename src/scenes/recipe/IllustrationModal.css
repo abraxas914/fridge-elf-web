@@ -1,0 +1,22 @@
+.illustration-flow { display: flex; flex-direction: column; gap: 10px; }
+.illustration-intro { margin: 0; color: var(--text-mid); font-family: "DotGothic16", monospace; font-size: 12px; line-height: 1.55; }
+.illustration-alert { padding: 9px 10px; color: var(--coral-dk); font-family: "DotGothic16", monospace; font-size: 12px; line-height: 1.45; background: var(--coral-lt); border: 2px solid var(--coral-dk); }
+.illustration-label { color: var(--text); font-family: "DotGothic16", monospace; font-size: 12px; font-weight: bold; letter-spacing: 1px; }
+.illustration-styles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.illustration-style { min-height: 74px; padding: 8px; text-align: left; cursor: pointer; background: var(--panel-3); border: 2px solid var(--border); box-shadow: 2px 2px 0 var(--shadow); }
+.illustration-style.selected { background: var(--butter); box-shadow: inset 0 0 0 2px var(--coral), 2px 2px 0 var(--shadow); }
+.illustration-style-name, .illustration-style-en, .illustration-style-desc { display: block; }
+.illustration-style-name { font-family: "DotGothic16", monospace; font-size: 13px; font-weight: bold; }
+.illustration-style-en { margin-top: 3px; font-family: "Silkscreen", monospace; font-size: 6px; letter-spacing: 1px; }
+.illustration-style-desc { margin-top: 6px; color: var(--text-mid); font-family: "DotGothic16", monospace; font-size: 10px; }
+.illustration-textarea { width: 100%; min-height: 220px; box-sizing: border-box; padding: 10px; resize: vertical; color: var(--text); font-family: "DotGothic16", monospace; font-size: 12px; line-height: 1.55; outline: none; background: var(--panel-3); border: 2.5px solid var(--border); box-shadow: inset 2px 2px 0 rgb(0 0 0 / 10%); }
+.illustration-textarea:focus { box-shadow: inset 2px 2px 0 rgb(0 0 0 / 10%), 0 0 0 2px var(--butter); }
+.illustration-count { margin-top: -7px; color: var(--text-lt); font-family: "Silkscreen", monospace; font-size: 6px; text-align: right; }
+.illustration-generate { width: 100%; padding: 11px; color: var(--panel); font-family: "DotGothic16", monospace; font-size: 14px; font-weight: bold; cursor: pointer; background: var(--coral); border: 2.5px solid var(--border); box-shadow: 3px 3px 0 var(--shadow); }
+.illustration-generate:disabled { cursor: not-allowed; filter: grayscale(.7); opacity: .55; }
+.illustration-status { padding: 8px; color: var(--text); font-family: "DotGothic16", monospace; font-size: 12px; text-align: center; background: var(--sage-lt); border: 2px dashed var(--border); }
+.illustration-results { display: flex; flex-direction: column; gap: 12px; }
+.illustration-result { margin: 0; padding: 7px; background: var(--panel-3); border: 2.5px solid var(--border); box-shadow: 3px 3px 0 var(--shadow); }
+.illustration-result img { display: block; width: 100%; height: auto; aspect-ratio: 5 / 6; object-fit: contain; background: white; image-rendering: auto; }
+.illustration-result figcaption { display: flex; align-items: center; justify-content: space-between; padding-top: 7px; font-family: "Silkscreen", monospace; font-size: 7px; }
+.illustration-result a { color: var(--coral-dk); font-family: "DotGothic16", monospace; font-size: 11px; font-weight: bold; }

@@ -1,0 +1,31 @@
+:root {
+  --border-thin: 2px;
+  --border-control: 2.5px;
+  --border-card: 3px;
+  --border-modal: 4px;
+  --shadow-control: 2px 2px 0 var(--shadow);
+  --shadow-card: 3px 3px 0 var(--shadow);
+  --shadow-hero: 4px 4px 0 var(--shadow);
+  --shadow-modal: 5px 5px 0 var(--shadow);
+}
+
+.pixel-control {
+  border: var(--border-control) solid var(--border);
+  box-shadow: var(--shadow-control);
+}
+
+.pixel-control:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.pixel-card {
+  border: var(--border-card) solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+
+.pixel-svg {
+  display: block;
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}

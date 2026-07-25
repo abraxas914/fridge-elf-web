@@ -1,0 +1,30 @@
+.shop-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, var(--butter) 0%, var(--butter-lt) 100%);
+  border: 3px solid var(--border);
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+.shop-summary h3 { margin-bottom: 4px; color: var(--border); font-family: "DotGothic16", monospace; font-size: 18px; letter-spacing: 2px; }
+.shop-summary p { color: var(--border); font-family: "Silkscreen", monospace; font-size: 8px; letter-spacing: 1px; opacity: 0.75; }
+.shop-gen-btn { padding: 8px 12px; color: var(--border); font-family: "DotGothic16", monospace; font-size: 13px; letter-spacing: 1px; cursor: pointer; background: var(--panel); border: 2.5px solid var(--border); box-shadow: 2px 2px 0 var(--shadow); }
+.shop-gen-btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--shadow); }
+.shop-list-card { padding: 6px; margin-bottom: 14px; background: var(--panel); border: 3px solid var(--border); box-shadow: 3px 3px 0 var(--shadow); }
+.shop-item { display: flex; gap: 10px; align-items: center; width: 100%; padding: 8px; text-align: initial; cursor: pointer; background: transparent; border: 0; border-bottom: 2px dashed var(--text-lt); }
+.shop-item:last-child { border-bottom: none; }
+.shop-item.done { opacity: 0.45; }
+.shop-item.done .shop-name { text-decoration: line-through; }
+.shop-check { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 22px; height: 22px; color: transparent; font-family: "Silkscreen", monospace; font-size: 12px; background: var(--panel-3); border: 2.5px solid var(--border); box-shadow: 2px 2px 0 var(--shadow); }
+.shop-item.done .shop-check { color: var(--panel); background: var(--sage); }
+.shop-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: var(--panel-3); border: 2px solid var(--border); }
+.shop-icon img { width: 80%; height: 80%; }
+.shop-name-wrap { flex: 1; min-width: 0; }
+.shop-name, .shop-reason { display: block; }
+.shop-name { color: var(--text); font-family: "DotGothic16", monospace; font-size: 15px; font-weight: bold; letter-spacing: 1px; }
+.shop-reason { margin-top: 2px; color: var(--text-mid); font-family: "Silkscreen", monospace; font-size: 7px; letter-spacing: 1px; }
+.shop-qty { padding: 3px 6px; color: var(--border); font-family: "Silkscreen", monospace; font-size: 9px; background: var(--butter); border: 2px solid var(--border); box-shadow: 1px 1px 0 var(--shadow); }
+.planner-derived { color: var(--text); font-family: "DotGothic16", monospace; font-size: 14px; line-height: 1.6; }
+.planner-derived b { color: var(--coral-dk); }

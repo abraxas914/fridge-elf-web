@@ -1,0 +1,31 @@
+:root {
+  --bg-page: #c8c0a8;
+  --bg-cream: #ebdcb4;
+  --bg-warm: #dcc89e;
+  --panel: #f5eac8;
+  --panel-2: #e8d5a8;
+  --panel-3: #fbf3db;
+  --mustard: #d9a868;
+  --mustard-dk: #b88848;
+  --navy: #4a6b8f;
+  --navy-dk: #2e4b6b;
+  --navy-lt: #6b8fb0;
+  --sage: #7a9968;
+  --sage-dk: #5a7a4b;
+  --sage-lt: #a8c08a;
+  --coral: #d96b4f;
+  --coral-dk: #b04a32;
+  --butter: #e8b84a;
+  --butter-lt: #f5d078;
+  --peach: #e89870;
+  --rose: #c86b7a;
+  --wall: #c8bfa5;
+  --floor: #e8dbc4;
+  --floor-dk: #b89877;
+  --text: #2b2117;
+  --text-mid: #5a4530;
+  --text-lt: #8a7455;
+  --border: #2b2117;
+  --shadow: rgb(43 33 23 / 32%);
+  --shadow-soft: rgb(43 33 23 / 18%);
+}

@@ -1,0 +1,133 @@
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+.scene.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#kitchen-scene {
+  overflow: hidden;
+  background: linear-gradient(180deg, #a8b0b8 0%, #b0a898 45%, #c8b898 100%);
+}
+
+.kitchen-hint {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  left: 0;
+  z-index: 5;
+  color: var(--panel);
+  font-family: "Silkscreen", monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-align: center;
+  text-shadow: 2px 2px 0 var(--border);
+  animation: hintPulse 1.6s ease-in-out infinite;
+}
+
+.kitchen-hint .cn {
+  display: block;
+  margin-top: 6px;
+  font-family: "DotGothic16", monospace;
+  font-size: 16px;
+  letter-spacing: 3px;
+}
+
+@keyframes hintPulse {
+  0%,
+  100% { opacity: 0.7; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}
+
+.kitchen-stage {
+  width: 92%;
+  max-width: 420px;
+  height: auto;
+  filter: drop-shadow(0 12px 0 rgb(0 0 0 / 15%));
+  animation: floatIn 1s cubic-bezier(.34, 1.4, .64, 1) forwards;
+}
+
+@keyframes floatIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.fridge-hotspot {
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.fridge-hotspot:hover { filter: brightness(1.08); }
+.glow-ring { animation: glowPulse 1.5s ease-in-out infinite; }
+
+@keyframes glowPulse {
+  0%,
+  100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.steam-puff {
+  opacity: 0;
+  animation: steamRise 2s ease-out infinite;
+}
+
+.steam-puff.p2 { animation-delay: 0.7s; }
+.steam-puff.p3 { animation-delay: 1.3s; }
+
+@keyframes steamRise {
+  0% { opacity: 0; transform: translateY(0) scale(0.6); }
+  30% { opacity: 0.7; }
+  100% { opacity: 0; transform: translateY(-14px) scale(1.4); }
+}
+
+.plant-sway {
+  transform-origin: center bottom;
+  animation: sway 3s ease-in-out infinite;
+}
+
+@keyframes sway {
+  0%,
+  100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+.kitchen-zooming .kitchen-stage {
+  animation: zoomToFridge 0.9s cubic-bezier(.6, 0, .4, 1) forwards;
+}
+
+@keyframes zoomToFridge {
+  from { opacity: 1; transform: scale(1) translate(0, 0); }
+  to { opacity: 0; transform: scale(4.5) translate(-14%, -6%); }
+}
+
+.skip-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 20;
+  padding: 5px 12px;
+  color: var(--butter);
+  font-family: "Silkscreen", monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  background: var(--border);
+  border: 2.5px solid var(--butter);
+  box-shadow: 2px 2px 0 rgb(0 0 0 / 30%);
+}
+
+.skip-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 rgb(0 0 0 / 0%);
+}
