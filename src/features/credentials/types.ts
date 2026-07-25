@@ -1,4 +1,7 @@
-export type AiCapability = 'assistant' | 'recipe-illustration'
+export type AiCapability =
+  | 'assistant'
+  | 'speech-recognition'
+  | 'recipe-illustration'
 
 export type CredentialStatus =
   | 'not_configured'
@@ -27,7 +30,11 @@ export interface ProviderPreset {
   id: string
   capability: AiCapability
   label: string
-  protocol: 'openai-compatible' | 'anthropic'
+  protocol:
+    | 'openai-compatible'
+    | 'openai-audio-transcription'
+    | 'qwen-input-audio'
+    | 'anthropic'
   endpoint: string
   suggestedModelId: string
 }

@@ -10,7 +10,10 @@ function customPreset(
     id: 'custom',
     capability,
     label: '自定义服务',
-    protocol: 'openai-compatible',
+    protocol:
+      capability === 'speech-recognition'
+        ? 'openai-audio-transcription'
+        : 'openai-compatible',
     endpoint: '',
     suggestedModelId: '',
   }
@@ -19,6 +22,20 @@ function customPreset(
 export function providerPresetsFor(
   capability: AiCapability,
 ): ProviderPreset[] {
+  if (capability === 'speech-recognition') {
+    return [
+      {
+        id: 'qwen',
+        capability,
+        label: '千问',
+        protocol: 'qwen-input-audio',
+        endpoint:
+          'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+        suggestedModelId: 'qwen3-asr-flash',
+      },
+      customPreset(capability),
+    ]
+  }
   return [customPreset(capability)]
 }
 

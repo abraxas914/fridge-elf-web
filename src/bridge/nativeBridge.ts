@@ -131,6 +131,7 @@ function parseStatus(raw: string): MqttStatus {
 
 const CAPABILITIES = [
   'assistant',
+  'speech-recognition',
   'recipe-illustration',
 ] as const satisfies readonly AiCapability[]
 const CREDENTIAL_STATUSES = [
@@ -177,6 +178,10 @@ function parseCredentialSummaries(raw: string): CredentialSummaries {
   }
   return {
     assistant: parseCredentialSummary(value.assistant, 'assistant'),
+    'speech-recognition': parseCredentialSummary(
+      value['speech-recognition'],
+      'speech-recognition',
+    ),
     'recipe-illustration': parseCredentialSummary(
       value['recipe-illustration'],
       'recipe-illustration',
@@ -272,14 +277,14 @@ function parseAssistantReply(value: unknown): AssistantReply {
   if (!isRecord(value)) {
     throw new NativeBridgeError(
       'INVALID_ASSISTANT_REPLY',
-      '千问返回内容无效',
+      '智能助手返回内容无效',
     )
   }
   return {
     answer:
       typeof value.answer === 'string'
         ? value.answer
-        : '千问已完成分析。',
+        : '智能助手已完成分析。',
     recipes: Array.isArray(value.recipes)
       ? (value.recipes as AssistantReply['recipes'])
       : [],
@@ -435,7 +440,7 @@ export function createNativeRuntime(
         pending.resolve(event.payload.result)
       } else {
         pending.reject(
-          unavailable('EMPTY_ASSISTANT_REPLY', '千问返回内容为空'),
+          unavailable('EMPTY_ASSISTANT_REPLY', '智能助手返回内容为空'),
         )
       }
       return
@@ -500,6 +505,13 @@ export function createNativeRuntime(
         return {
           assistant: {
             capability: 'assistant',
+            status: 'not_configured',
+            providerId: '',
+            providerLabel: '',
+            modelId: '',
+          },
+          'speech-recognition': {
+            capability: 'speech-recognition',
             status: 'not_configured',
             providerId: '',
             providerLabel: '',
@@ -654,7 +666,7 @@ export function createNativeRuntime(
       return new Promise<AssistantReply>((resolve, reject) => {
         const timer = setTimeout(() => {
           assistantRequests.delete(requestId)
-          reject(unavailable('ASSISTANT_TIMEOUT', '千问响应超时，请重试'))
+          reject(unavailable('ASSISTANT_TIMEOUT', '智能助手响应超时，请重试'))
         }, 60_000)
         assistantRequests.set(requestId, { resolve, reject, timer })
         try {
@@ -667,7 +679,7 @@ export function createNativeRuntime(
           reject(
             error instanceof Error
               ? error
-              : unavailable('ASSISTANT_FAILED', '千问请求失败'),
+              : unavailable('ASSISTANT_FAILED', '智能助手请求失败'),
           )
         }
       })

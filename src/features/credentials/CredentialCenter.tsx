@@ -5,6 +5,10 @@ import type {
   CredentialSummaries,
   CredentialSummary,
 } from './types'
+import {
+  credentialPreset,
+  providerPresetsFor,
+} from './providerPresets'
 import './CredentialCenter.css'
 
 type CredentialView =
@@ -26,6 +30,13 @@ const EMPTY_SUMMARIES: CredentialSummaries = {
     providerLabel: '',
     modelId: '',
   },
+  'speech-recognition': {
+    capability: 'speech-recognition',
+    status: 'not_configured',
+    providerId: '',
+    providerLabel: '',
+    modelId: '',
+  },
 }
 
 const CAPABILITY_COPY: Record<
@@ -35,6 +46,10 @@ const CAPABILITY_COPY: Record<
   assistant: {
     title: '智能助手',
     description: '食谱推荐与问答',
+  },
+  'speech-recognition': {
+    title: '语音识别',
+    description: '把语音输入转成文字',
   },
   'recipe-illustration': {
     title: '食谱插画',
@@ -95,6 +110,7 @@ export function CredentialCenter({
   )
   const [summaries, setSummaries] =
     useState<CredentialSummaries>(EMPTY_SUMMARIES)
+  const [providerId, setProviderId] = useState('custom')
   const [providerLabel, setProviderLabel] = useState('')
   const [modelId, setModelId] = useState('')
   const [endpoint, setEndpoint] = useState('')
@@ -124,9 +140,16 @@ export function CredentialCenter({
 
   const openEditor = (capability: AiCapability) => {
     const summary = summaries[capability]
-    setProviderLabel(summary.providerLabel)
-    setModelId(summary.modelId)
-    setEndpoint('')
+    const preset = credentialPreset(
+      capability,
+      summary.providerId || providerPresetsFor(capability)[0].id,
+    )
+    setProviderId(preset.id)
+    setProviderLabel(summary.providerLabel || preset.label)
+    setModelId(summary.modelId || preset.suggestedModelId)
+    setEndpoint(
+      summary.status === 'not_configured' ? preset.endpoint : '',
+    )
     setApiKey('')
     setError('')
     setView({ kind: 'edit', capability })
@@ -159,7 +182,7 @@ export function CredentialCenter({
     try {
       const next = await credentials.saveConfig({
         capability,
-        providerId: 'custom',
+        providerId,
         providerLabel: providerLabel.trim(),
         modelId: modelId.trim(),
         endpoint: endpoint.trim(),
@@ -241,6 +264,7 @@ export function CredentialCenter({
   const capability = view.capability
   const summary = summaries[capability]
   const copy = CAPABILITY_COPY[capability]
+  const presets = providerPresetsFor(capability)
   return (
     <section className="credential-center" aria-label={`${copy.title}配置`}>
       <header className="credential-head">
@@ -261,6 +285,30 @@ export function CredentialCenter({
       </header>
 
       <div className="credential-form">
+        {presets.length > 1 ? (
+          <label>
+            <span>服务预设</span>
+            <select
+              value={providerId}
+              onChange={(event) => {
+                const preset = credentialPreset(
+                  capability,
+                  event.target.value,
+                )
+                setProviderId(preset.id)
+                setProviderLabel(preset.label)
+                setModelId(preset.suggestedModelId)
+                setEndpoint(preset.endpoint)
+              }}
+            >
+              {presets.map((preset, index) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.label}{index === 0 ? '（默认）' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <label>
           <span>服务商</span>
           <input

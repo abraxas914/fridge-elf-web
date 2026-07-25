@@ -63,7 +63,9 @@ function managedSummary(capability: AiCapability): CredentialSummary {
     modelId:
       capability === 'assistant'
         ? 'managed-agent'
-        : 'managed-image-2',
+        : capability === 'speech-recognition'
+          ? 'managed-speech'
+          : 'managed-image-2',
   }
 }
 
@@ -72,6 +74,7 @@ function createManagedCredentials(): CredentialPort {
     async getSummaries() {
       return {
         assistant: managedSummary('assistant'),
+        'speech-recognition': managedSummary('speech-recognition'),
         'recipe-illustration': managedSummary('recipe-illustration'),
       }
     },

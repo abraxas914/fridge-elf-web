@@ -125,6 +125,13 @@ export function createBrowserCredentialMock(): CredentialPort {
       providerLabel: '',
       modelId: '',
     },
+    'speech-recognition': {
+      capability: 'speech-recognition',
+      status: 'not_configured',
+      providerId: '',
+      providerLabel: '',
+      modelId: '',
+    },
     'recipe-illustration': {
       capability: 'recipe-illustration',
       status: 'not_configured',

@@ -20,8 +20,8 @@ test('locks the released product baseline', () => {
     },
     {
       repository: 'https://github.com/YantingShen-dev/fridge_app.git',
-      tag: 'v1.0.0',
-      commit: '50364b2',
+      tag: 'v1.0.1',
+      commit: '4ee731b',
       sourcePath: 'apps/android/web',
     },
   )

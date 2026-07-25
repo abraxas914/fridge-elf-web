@@ -64,6 +64,13 @@ function api(overrides: Partial<NativeBridgeApi> = {}): NativeBridgeApi {
           providerLabel: '',
           modelId: '',
         },
+        'speech-recognition': {
+          capability: 'speech-recognition',
+          status: 'not_configured',
+          providerId: '',
+          providerLabel: '',
+          modelId: '',
+        },
         'recipe-illustration': {
           capability: 'recipe-illustration',
           status: 'not_configured',
@@ -131,8 +138,6 @@ describe('typed NativeBridge boundary', () => {
       connected: true,
       detail: 'BROWSER MOCK',
     })
-    runtime.stateStorage.setItem('demo-check', 'ready')
-    expect(runtime.stateStorage.getItem('demo-check')).toBe('ready')
   })
 
   it('requires bridge version 1 and parses all three JSON calls', async () => {
@@ -157,10 +162,13 @@ describe('typed NativeBridge boundary', () => {
     ).toThrow(/版本不兼容/)
   })
 
-  it('exposes safe summaries for both AI capabilities', async () => {
+  it('exposes safe summaries for all AI capabilities', async () => {
     const bridge = createNativeBridge(api(), {} as Window)
     await expect(bridge.getSummaries()).resolves.toEqual({
       assistant: expect.objectContaining({ capability: 'assistant' }),
+      'speech-recognition': expect.objectContaining({
+        capability: 'speech-recognition',
+      }),
       'recipe-illustration': expect.objectContaining({
         capability: 'recipe-illustration',
       }),

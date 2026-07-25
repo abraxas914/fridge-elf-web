@@ -10,6 +10,9 @@
     "api/demo/recommend.ts": {
       "maxDuration": 60
     },
+    "api/demo/transcribe.ts": {
+      "maxDuration": 300
+    },
     "api/illustrate.ts": {
       "maxDuration": 300
     }
@@ -50,7 +53,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=()"
+          "value": "camera=(), microphone=(self), geolocation=()"
         }
       ]
     }
