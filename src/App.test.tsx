@@ -6,6 +6,7 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import type { DemoAgentInput, DemoAgentResponse } from './ai/types'
 import type { NativeEvent } from './bridge/types'
 import { App, type AppInventoryRuntime } from './App'
 
@@ -81,22 +82,49 @@ describe('App', () => {
     expect(screen.getByText('• 米/藜麦')).toBeVisible()
   })
 
-  it('renders deterministic AI and recipe-agent fixture replies', () => {
-    vi.useFakeTimers()
-    render(<App />)
+  it('sends the current mock world to online recommendation and Agent panels', async () => {
+    const requester = vi.fn(
+      async (input: DemoAgentInput): Promise<DemoAgentResponse> => ({
+        answer:
+          input.mode === 'recommend'
+            ? '在线推荐：先吃今天临期的番茄。'
+            : '在线回答：番茄和鸡蛋可以直接使用。',
+      }),
+    )
+    render(<App demoAgentRequester={requester} />)
     fireEvent.click(screen.getByRole('button', { name: '跳过' }))
     fireEvent.click(screen.getByRole('tab', { name: '食谱' }))
     fireEvent.click(screen.getByRole('button', { name: /AI 食谱推荐/ }))
-    expect(screen.getByRole('dialog')).toHaveTextContent(
-      '已识别：番茄、鸡蛋、香蕉、白菜',
+    expect(
+      await screen.findByText('在线推荐：先吃今天临期的番茄。'),
+    ).toBeVisible()
+    expect(requester).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'recommend',
+        snapshot: expect.objectContaining({
+          inventory: expect.arrayContaining([
+            expect.objectContaining({
+              name: '番茄',
+              expiryLevel: 'urgent',
+            }),
+          ]),
+        }),
+      }),
     )
     fireEvent.click(screen.getByRole('button', { name: '关闭' }))
     fireEvent.click(screen.getByRole('button', { name: /语音/ }))
-    act(() => vi.advanceTimersByTime(450))
-    expect(screen.getByRole('dialog')).toHaveTextContent(
-      '建议先做「番茄鸡蛋轻食碗」',
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toHaveTextContent('Recipe Agent')
+    })
+    expect(
+      await screen.findByText('在线回答：番茄和鸡蛋可以直接使用。'),
+    ).toBeVisible()
+    expect(requester).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        mode: 'agent',
+        message: '今晚用番茄和鸡蛋能做什么？',
+      }),
     )
-    vi.useRealTimers()
   })
 
   it('preserves local preview state while switching between all five tabs', () => {

@@ -18,6 +18,11 @@ import type {
   AppTab,
   PresentedFood,
 } from './app/types'
+import { buildDemoWorldSnapshot } from './ai/demoWorld'
+import type {
+  DemoAgentInput,
+  DemoAgentResponse,
+} from './ai/types'
 import type { AddInventoryItem } from './bridge/types'
 import { AppShell } from './components/AppShell'
 import { RECIPES } from './fixtures/goldenFixture'
@@ -33,11 +38,10 @@ import { DeviceDisplayScene } from './scenes/note/DeviceDisplayScene'
 import { ProfileScene } from './scenes/profile/ProfileScene'
 import { MealPlannerModal } from './scenes/recipe/MealPlannerModal'
 import {
-  PotTransition,
   RecipeDetailModal,
 } from './scenes/recipe/RecipeDetailModal'
+import { DemoAgentPanel } from './scenes/recipe/DemoAgentPanel'
 import {
-  RecipeMini,
   RecipeScene,
   type Recipe,
 } from './scenes/recipe/RecipeScene'
@@ -71,8 +75,12 @@ function presentInventory(
 
 export function App({
   inventoryRuntime: providedInventoryRuntime,
+  demoAgentRequester,
 }: {
   inventoryRuntime?: AppInventoryRuntime
+  demoAgentRequester?: (
+    input: DemoAgentInput,
+  ) => Promise<DemoAgentResponse>
 } = {}) {
   const tabHistory = useRef<AppTab[]>([])
   const audioRef = useRef<ReturnType<typeof createBrowserAudio> | null>(null)
@@ -227,6 +235,28 @@ export function App({
       ),
     [inventoryItems, state.planner],
   )
+  const demoWorld = useMemo(
+    () =>
+      buildDemoWorldSnapshot({
+        inventory: inventoryItems,
+        planner: state.planner,
+        missingItems: missingIngredients,
+      }),
+    [inventoryItems, missingIngredients, state.planner],
+  )
+  const openRecipeById = useCallback(
+    (recipeId: string) => {
+      const recipe = RECIPES.find((candidate) => candidate.id === recipeId)
+      if (!recipe) return
+      audio.play('ding')
+      dispatch({
+        type: 'open-modal',
+        kind: 'recipe-detail',
+        payload: recipe,
+      })
+    },
+    [audio],
+  )
 
   if (state.scene === 'kitchen') {
     return (
@@ -300,31 +330,12 @@ export function App({
         ? {
             title: 'AI · 根据冰箱食材推荐',
             content: (
-              <>
-                <div className="preview-strip">LOCAL PREVIEW · AI FIXTURE</div>
-                <div className="planner-intro">
-                  已识别：番茄、鸡蛋、香蕉、白菜。优先推荐能直接开做的菜谱。
-                </div>
-                <div className="recipe-strip">
-                  {RECIPES.filter((recipe) => recipe.match)
-                    .slice(0, 3)
-                    .map((recipe) => (
-                      <RecipeMini
-                        recipe={recipe}
-                        label="READY"
-                        key={recipe.id}
-                        onOpen={(selected) => {
-                          audio.play('ding')
-                          dispatch({
-                            type: 'open-modal',
-                            kind: 'recipe-detail',
-                            payload: selected,
-                          })
-                        }}
-                      />
-                    ))}
-                </div>
-              </>
+              <DemoAgentPanel
+                mode="recommend"
+                snapshot={demoWorld}
+                requester={demoAgentRequester}
+                onOpenRecipe={openRecipeById}
+              />
             ),
           }
       : state.modal?.kind === 'recipe-illustration'
@@ -341,29 +352,13 @@ export function App({
         ? {
             title: 'Recipe Agent',
             content: (
-              <>
-                <div className="preview-strip">LOCAL PREVIEW · AGENT FIXTURE</div>
-                <PotTransition />
-                <div className="recipe-agent-answer">
-                  你问：{String(state.modal.payload)}
-                  <br /><br />
-                  建议先做「番茄鸡蛋轻食碗」。冰箱里番茄和鸡蛋都能直接用，15 分钟完成。
-                </div>
-                <button
-                  className="planner-subaction"
-                  type="button"
-                  onClick={() => {
-                    audio.play('ding')
-                    dispatch({
-                      type: 'open-modal',
-                      kind: 'recipe-detail',
-                      payload: RECIPES[0],
-                    })
-                  }}
-                >
-                  查看这道菜
-                </button>
-              </>
+              <DemoAgentPanel
+                mode="agent"
+                message={String(state.modal.payload)}
+                snapshot={demoWorld}
+                requester={demoAgentRequester}
+                onOpenRecipe={openRecipeById}
+              />
             ),
           }
       : state.modal
