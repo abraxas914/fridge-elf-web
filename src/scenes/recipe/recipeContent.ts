@@ -1,5 +1,6 @@
 import type { RecipeIllustrationRecipe } from '../../features/recipeIllustration/types'
-import { GOLDEN_PRESENTED_FOODS } from '../fridge/foodPresentation'
+import type { RecipeIngredient } from '../../app/recipes'
+import { findFoodCatalogEntry } from '../../catalog/foodCatalog'
 import type { Recipe } from './RecipeScene'
 
 const FALLBACK_INGREDIENT_NAMES: Readonly<Record<string, string>> = {
@@ -9,14 +10,15 @@ const FALLBACK_INGREDIENT_NAMES: Readonly<Record<string, string>> = {
 
 function ingredientName(key: string) {
   return (
-    GOLDEN_PRESENTED_FOODS.find((food) => food.key === key)?.name ??
+    findFoodCatalogEntry(key)?.name ??
     FALLBACK_INGREDIENT_NAMES[key] ??
     key
   )
 }
 
 export function recipeDisplaySteps(recipe: Recipe): string[] {
-  const names = recipe.need.map(ingredientName)
+  if (recipe.steps?.length) return [...recipe.steps]
+  const names = recipeIngredients(recipe).map((item) => item.name)
   return [
     `取出 ${names.slice(0, 2).join(' + ')}，先清洗并切成小块。`,
     '热锅少油，先下需要久煮的食材，再加入主料翻炒。',
@@ -25,14 +27,45 @@ export function recipeDisplaySteps(recipe: Recipe): string[] {
   ]
 }
 
+export function recipeIngredients(recipe: Recipe): RecipeIngredient[] {
+  if (recipe.ingredients?.length) {
+    return recipe.ingredients.map((item) => ({ ...item }))
+  }
+  return recipe.need.map((value) => {
+    const entry = findFoodCatalogEntry(value)
+    return {
+      ...(entry ? { key: entry.key } : {}),
+      name: ingredientName(value),
+    }
+  })
+}
+
 export function toIllustrationRecipe(
   recipe: Recipe,
 ): RecipeIllustrationRecipe {
-  const names = recipe.need.map(ingredientName)
+  const ingredients = recipeIngredients(recipe)
+  if (recipe.steps?.length) {
+    return {
+      id: recipe.id,
+      title: recipe.cn,
+      ingredients: ingredients.map(({ name, amount }) => ({
+        name,
+        ...(amount ? { amount } : {}),
+      })),
+      steps: recipe.steps.map((action, index) => ({
+        order: index + 1,
+        action,
+      })),
+    }
+  }
+  const names = ingredients.map((item) => item.name)
   return {
     id: recipe.id,
     title: recipe.cn,
-    ingredients: names.map((name) => ({ name })),
+    ingredients: ingredients.map(({ name, amount }) => ({
+      name,
+      ...(amount ? { amount } : {}),
+    })),
     steps: [
       {
         order: 1,

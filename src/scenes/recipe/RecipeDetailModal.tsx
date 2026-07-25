@@ -7,6 +7,7 @@ import { RecipeIllustrationPanel } from '../../features/recipeIllustration/Recip
 import type { Recipe } from './RecipeScene'
 import {
   recipeDisplaySteps,
+  recipeIngredients,
   toIllustrationRecipe,
 } from './recipeContent'
 
@@ -68,12 +69,22 @@ export function RecipeDetailModal({
   }
 
   const steps = recipeDisplaySteps(recipe)
+  const ingredients = recipeIngredients(recipe)
   return (
     <>
-      <div className="modal-row"><span className="label">用时</span><span>{recipe.time} 分钟</span></div>
+      {recipe.time > 0 ? (
+        <div className="modal-row"><span className="label">用时</span><span>{recipe.time} 分钟</span></div>
+      ) : null}
       <div className="modal-row"><span className="label">热量</span><span>{recipe.kcal ?? '--'} kcal</span></div>
       <div className="modal-row"><span className="label">匹配</span><span>{recipe.match ? '冰箱有材料' : '需要补货'}</span></div>
       <div className="recipe-description">{recipe.desc}</div>
+      <div className="recipe-ingredient-list" aria-label="食材">
+        {ingredients.map((item, index) => (
+          <span className="recipe-ingredient" key={`${item.name}-${index}`}>
+            {item.name}{item.amount ? ` · ${item.amount}` : ''}
+          </span>
+        ))}
+      </div>
       <div className="recipe-step-list">{steps.map((step) => <div className="recipe-step" key={step}>{step}</div>)}</div>
       <RecipeIllustrationPanel
         recipe={toIllustrationRecipe(recipe)}

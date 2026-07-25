@@ -11,6 +11,7 @@ import {
 } from './state'
 import { createMemoryStorage } from '../demo/memoryStorage'
 import { TAB_ORDER, type AppState } from './types'
+import type { SavedRecipe } from './recipes'
 
 class FakeClock implements ClockPort {
   private time = 0
@@ -229,6 +230,36 @@ describe('Life Helper state', () => {
         'banana',
         'egg',
       ]),
-    ).toEqual(['米/藜麦', '燕麦'])
+    ).toEqual(['谷物饭', '燕麦粉'])
+  })
+
+  it('uses structured ingredient names and catalog aliases for planned meals', () => {
+    const planner = appReducer(initialAppState, {
+      type: 'assign-recipe',
+      day: 'mon',
+      meal: 'dinner',
+      recipeId: 'recipe-structured',
+    }).planner
+    const recipe: SavedRecipe = {
+      id: 'recipe-structured',
+      key: 'pork',
+      name: 'STRUCTURED',
+      cn: '结构化食谱',
+      kcal: null,
+      time: 0,
+      tags: [],
+      match: false,
+      need: ['pork', 'tofu'],
+      desc: '',
+      ingredients: [
+        { key: 'pork', name: '排骨' },
+        { name: '嫩豆腐' },
+        { name: '紫苏叶' },
+      ],
+    }
+
+    expect(
+      deriveMissingIngredients(planner, ['五花肉', '豆腐'], [recipe]),
+    ).toEqual(['紫苏叶'])
   })
 })

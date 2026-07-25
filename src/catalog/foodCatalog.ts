@@ -130,5 +130,22 @@ export const foodCatalog = Object.fromEntries(
   foodCatalogEntries.map((entry) => [entry.key, entry]),
 ) as Record<FoodKey, FoodCatalogEntry>
 
+const normalizeFoodName = (value: string) =>
+  value.trim().toLocaleLowerCase('zh-CN')
+
+export function findFoodCatalogEntry(
+  value: string,
+): FoodCatalogEntry | undefined {
+  const normalized = normalizeFoodName(value)
+  return foodCatalogEntries.find((entry) =>
+    [
+      entry.key,
+      entry.name,
+      entry.englishName,
+      ...(entry.aliases ?? []),
+    ].some((candidate) => normalizeFoodName(candidate) === normalized),
+  )
+}
+
 export const UNKNOWN_FOOD_SVG =
   '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="2" y="4" width="12" height="10" fill="#F5EAC8" stroke="#2B2117" stroke-width="1"/><rect x="2" y="4" width="12" height="3" fill="#E8B84A" stroke="#2B2117" stroke-width="1"/><rect x="6" y="9" width="4" height="1" fill="#8A7455"/></svg>'

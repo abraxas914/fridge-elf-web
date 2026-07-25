@@ -1,5 +1,6 @@
 import { defaultFavoriteRecipes, type SavedRecipe } from './recipes'
 import type { ClockPort } from './ports'
+import { findFoodCatalogEntry } from '../catalog/foodCatalog'
 import {
   PLANNER_DAY_KEYS,
   PLANNER_MEAL_KEYS,
@@ -156,9 +157,11 @@ export function deriveMissingIngredients(
   recipes: readonly SavedRecipe[] = defaultFavoriteRecipes(),
 ) {
   const have = new Set(
-    inventoryValues.map((value) =>
-      value.trim().toLocaleLowerCase('zh-CN'),
-    ),
+    inventoryValues.flatMap((value) => {
+      const normalized = value.trim().toLocaleLowerCase('zh-CN')
+      const entry = findFoodCatalogEntry(value)
+      return entry ? [normalized, entry.key] : [normalized]
+    }),
   )
   const missing = new Set<string>()
   const labels: Record<string, string> = {
@@ -171,9 +174,25 @@ export function deriveMissingIngredients(
       if (recipeId === null) continue
       const recipe = recipes.find((candidate) => candidate.id === recipeId)
       if (!recipe) continue
-      for (const key of recipe.need) {
-        const normalized = key.trim().toLocaleLowerCase('zh-CN')
-        if (!have.has(normalized)) missing.add(labels[key] ?? key)
+      const ingredients = recipe.ingredients?.length
+        ? recipe.ingredients
+        : recipe.need.map((value) => ({
+            key: findFoodCatalogEntry(value)?.key,
+            name: labels[value] ?? findFoodCatalogEntry(value)?.name ?? value,
+          }))
+      for (const ingredient of ingredients) {
+        const entry =
+          (ingredient.key && findFoodCatalogEntry(ingredient.key)) ??
+          findFoodCatalogEntry(ingredient.name)
+        const normalizedName = ingredient.name
+          .trim()
+          .toLocaleLowerCase('zh-CN')
+        if (
+          !have.has(normalizedName) &&
+          !(entry && have.has(entry.key))
+        ) {
+          missing.add(ingredient.name)
+        }
       }
     }
   }

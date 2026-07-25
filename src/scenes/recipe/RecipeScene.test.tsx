@@ -83,7 +83,21 @@ describe('RecipeDetailModal', () => {
     act(() => vi.advanceTimersByTime(950))
     expect(screen.getByText('15 分钟')).toBeVisible()
     expect(screen.getByText('320 kcal')).toBeVisible()
-    expect(document.querySelectorAll('.recipe-step')).toHaveLength(4)
+    expect(screen.getByText('番茄洗净后切成小块。')).toBeVisible()
+    expect(document.querySelectorAll('.recipe-step')).toHaveLength(3)
+    vi.useRealTimers()
+  })
+
+  it('shows structured ingredient amounts and hides unknown time', () => {
+    vi.useFakeTimers()
+    const recipe = RECIPES.find(
+      (candidate) => candidate.id === 'recipe-bamboo-chicken-rice',
+    )!
+    render(<RecipeDetailModal recipe={recipe} />)
+    act(() => vi.advanceTimersByTime(950))
+
+    expect(screen.getByText('鸡丁 · 170g')).toBeVisible()
+    expect(screen.queryByText('0 分钟')).not.toBeInTheDocument()
     vi.useRealTimers()
   })
 
@@ -138,7 +152,7 @@ describe('RecipeDetailModal', () => {
         ],
         steps: expect.arrayContaining([
           expect.objectContaining({ order: 1 }),
-          expect.objectContaining({ order: 4 }),
+          expect.objectContaining({ order: 3 }),
         ]),
       }),
       styleId: 'xiaohei',
