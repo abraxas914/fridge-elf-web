@@ -1,6 +1,6 @@
 import { useEffect, useState, type MouseEvent } from 'react'
+import { HardwareProofVisual } from './landing/HardwareProofVisual'
 import { LandingSection } from './landing/LandingSection'
-import { DeviceSyncSvg } from './landing/illustrations/DeviceSyncSvg'
 import { FridgeHeroSvg } from './landing/illustrations/FridgeHeroSvg'
 import { FridgeShelfSvg } from './landing/illustrations/FridgeShelfSvg'
 import { HomeScenesSvg } from './landing/illustrations/HomeScenesSvg'
@@ -245,7 +245,7 @@ export function LandingPage({
           <li>家庭共享库存</li>
         </ul>
         <div className="landing-iot-visual">
-          <DeviceSyncSvg />
+          <HardwareProofVisual />
         </div>
       </LandingSection>
 

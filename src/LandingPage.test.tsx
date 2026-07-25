@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { LandingPage } from './LandingPage'
 
@@ -84,6 +84,13 @@ describe('LandingPage', () => {
     expect(
       screen.getByRole('heading', {
         name: '冰箱旁和手机上，始终是同一份库存。',
+      }),
+    ).toBeVisible()
+    const iotSection = document.querySelector('#iot')
+    expect(iotSection).not.toBeNull()
+    expect(
+      within(iotSection as HTMLElement).getByRole('img', {
+        name: '同时运行 Fridge Elf 的手机端与冰箱硬件终端原型',
       }),
     ).toBeVisible()
     expect(screen.getByText('家庭共享库存')).toBeVisible()
