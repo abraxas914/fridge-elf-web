@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { DemoApiError } from '../ai/demoApi'
 import type { DemoAgentInput, DemoAgentResponse } from '../ai/types'
 import { emptyPlanner } from '../app/state'
 import { GOLDEN_PRESENTED_FOODS } from '../scenes/fridge/foodPresentation'
@@ -224,6 +225,7 @@ describe('managed Web Demo runtime', () => {
   })
 
   it('returns a deterministic read-only fixture when the gateway rejects', async () => {
+    window.history.replaceState({}, '', '/demo')
     const runtime = createDemoRuntime({
       agentRequester: vi.fn().mockRejectedValue(new Error('offline')),
     })
@@ -239,6 +241,25 @@ describe('managed Web Demo runtime', () => {
         'recipe-veggie-noodle',
       ],
       notices: ['当前展示的是本地演示回退结果'],
+    })
+  })
+
+  it('adds only a safe code and request ID to fallback in network debug mode', async () => {
+    window.history.replaceState({}, '', '/demo?debug=network')
+    const runtime = createDemoRuntime({
+      agentRequester: vi.fn().mockRejectedValue(
+        new DemoApiError(
+          'DEMO_RATE_LIMITED',
+          429,
+          'mobile-request-123',
+        ),
+      ),
+    })
+
+    await expect(runtime.assistant.ask(releasedContext)).resolves.toMatchObject({
+      notices: [
+        '当前展示的是本地演示回退结果 · DEMO_RATE_LIMITED · MOBILE-R',
+      ],
     })
   })
 })

@@ -1,5 +1,12 @@
-import { requestDemoAgent } from '../ai/demoApi'
+import {
+  DemoApiError,
+  requestDemoAgent,
+} from '../ai/demoApi'
 import { buildDemoWorldSnapshot } from '../ai/demoWorld'
+import {
+  isNetworkDiagnosticsEnabled,
+  isSafeNetworkRequestId,
+} from '../diagnostics/networkDiagnostics'
 import type {
   DemoAgentInput,
   DemoAgentResponse,
@@ -57,6 +64,35 @@ export interface ManagedAssistantPort extends AssistantPort {
 }
 
 const MANAGED_PROVIDER = 'Fridge Elf Demo Gateway'
+const FALLBACK_NOTICE = '当前展示的是本地演示回退结果'
+const FALLBACK_DIAGNOSTIC_CODES = new Set([
+  'DEMO_SESSION_UNAVAILABLE',
+  'DEMO_SESSION_REQUIRED',
+  'DEMO_RATE_LIMITED',
+  'AGENT_UNAVAILABLE',
+  'TIMEOUT',
+  'NETWORK_ERROR',
+  'ABORTED',
+  'RESPONSE_INVALID',
+])
+
+function fallbackNotice(error: unknown) {
+  if (
+    !isNetworkDiagnosticsEnabled() ||
+    !(error instanceof DemoApiError) ||
+    !FALLBACK_DIAGNOSTIC_CODES.has(error.code)
+  ) {
+    return FALLBACK_NOTICE
+  }
+  const requestId = isSafeNetworkRequestId(error.requestId)
+    ? error.requestId.slice(0, 8).toUpperCase()
+    : ''
+  return [
+    FALLBACK_NOTICE,
+    error.code,
+    ...(requestId ? [requestId] : []),
+  ].join(' · ')
+}
 
 function managedSummary(capability: AiCapability): CredentialSummary {
   return {
@@ -221,7 +257,7 @@ function createManagedAssistant(
           existingRecipeIds,
           notices: response.notices ?? [],
         }
-      } catch {
+      } catch (error) {
         return {
           answer:
             '网关暂时繁忙。演示建议：优先选择临期食材能覆盖的菜谱，并先安排到今天的餐次。',
@@ -231,7 +267,7 @@ function createManagedAssistant(
           existingRecipeIds: input.snapshot.availableRecipes
             .slice(0, 2)
             .map((recipe) => recipe.id),
-          notices: ['当前展示的是本地演示回退结果'],
+          notices: [fallbackNotice(error)],
         }
       }
   }
