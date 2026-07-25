@@ -16,8 +16,8 @@
 - Create `src/landing/recipeShowcase.test.ts`: configuration contract.
 - Create `src/landing/recipeShowcaseMotion.ts`: pure scroll-progress mapping.
 - Create `src/landing/recipeShowcaseMotion.test.ts`: progress boundary tests.
-- Create `src/landing/RecipeShowcase.tsx`: showcase markup, active state, scroll listener, CTA.
-- Create `src/landing/RecipeShowcase.test.tsx`: component behavior and accessibility.
+- Create `src/landing/RecipeShowcaseSection.tsx`: showcase markup, active state, scroll listener, CTA.
+- Create `src/landing/RecipeShowcaseSection.test.tsx`: component behavior and accessibility.
 - Create `src/landing/RecipeShowcase.css`: desktop stack, sticky stage, mobile carousel, reduced motion.
 - Modify `src/LandingPage.tsx`: place the showcase after capabilities and pass `openDemo`.
 - Modify `src/LandingPage.test.tsx`: lock approved copy and absence of restricted presentation metadata.
@@ -170,8 +170,8 @@ git commit -m "feat: map recipe showcase scroll progress"
 ### Task 3: Accessible showcase component
 
 **Files:**
-- Create: `src/landing/RecipeShowcase.tsx`
-- Create: `src/landing/RecipeShowcase.test.tsx`
+- Create: `src/landing/RecipeShowcaseSection.tsx`
+- Create: `src/landing/RecipeShowcaseSection.test.tsx`
 - Create: `src/landing/RecipeShowcase.css`
 
 - [ ] **Step 1: Write failing component tests**
@@ -222,13 +222,13 @@ describe('RecipeShowcase', () => {
 
 - [ ] **Step 2: Run the tests and verify RED**
 
-Run: `npm test -- src/landing/RecipeShowcase.test.tsx`
+Run: `npm test -- src/landing/RecipeShowcaseSection.test.tsx`
 
 Expected: FAIL because `RecipeShowcase` does not exist.
 
 - [ ] **Step 3: Implement markup and state**
 
-Implement `RecipeShowcase.tsx` with:
+Implement `RecipeShowcaseSection.tsx` with:
 
 ```tsx
 const [activeIndex, setActiveIndex] = useState(1)
@@ -279,14 +279,14 @@ Implement:
 
 - [ ] **Step 5: Run the tests and verify GREEN**
 
-Run: `npm test -- src/landing/RecipeShowcase.test.tsx src/landing/recipeShowcaseMotion.test.ts`
+Run: `npm test -- src/landing/RecipeShowcaseSection.test.tsx src/landing/recipeShowcaseMotion.test.ts`
 
 Expected: all tests pass without unhandled animation errors.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/landing/RecipeShowcase.tsx src/landing/RecipeShowcase.test.tsx src/landing/RecipeShowcase.css
+git add src/landing/RecipeShowcaseSection.tsx src/landing/RecipeShowcaseSection.test.tsx src/landing/RecipeShowcase.css
 git commit -m "feat: add recipe showcase interaction"
 ```
 
@@ -332,7 +332,7 @@ Place it after `.landing-capabilities` and before the `why` section. Do not add 
 
 - [ ] **Step 4: Run the Landing and component tests**
 
-Run: `npm test -- src/LandingPage.test.tsx src/landing/RecipeShowcase.test.tsx`
+Run: `npm test -- src/LandingPage.test.tsx src/landing/RecipeShowcaseSection.test.tsx`
 
 Expected: all tests pass.
 
@@ -367,7 +367,7 @@ Expected: new assertions fail until selectors, scroll geometry, and mobile CSS a
 
 - [ ] **Step 3: Correct only observable defects**
 
-Adjust `RecipeShowcase.tsx` and `RecipeShowcase.css` so the approved desktop sequence, reduced-motion behavior, mobile peek, and no-overflow conditions match the browser.
+Adjust `RecipeShowcaseSection.tsx` and `RecipeShowcase.css` so the approved desktop sequence, reduced-motion behavior, mobile peek, and no-overflow conditions match the browser.
 
 - [ ] **Step 4: Run the focused E2E test and verify GREEN**
 
@@ -378,7 +378,7 @@ Expected: all Landing motion tests pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add tests/e2e/landing-motion.spec.ts src/landing/RecipeShowcase.tsx src/landing/RecipeShowcase.css
+git add tests/e2e/landing-motion.spec.ts src/landing/RecipeShowcaseSection.tsx src/landing/RecipeShowcase.css
 git commit -m "test: verify recipe showcase motion"
 ```
 
@@ -434,4 +434,3 @@ curl -fsSL https://fridge-elf-app.vercel.app/ | rg "Fridge Elf · 冰箱精灵"
 ```
 
 Expected: CI and Retinbox deploy conclude successfully; Vercel serves the current Fridge Elf Landing shell. If the custom host blocks CLI requests with 403, use the successful Retinbox workflow as the deployment signal and report the host-protection limitation.
-
