@@ -28,11 +28,12 @@ test('landing page links the latest APK and opens the demo without leaving the d
       name: '让冰箱里的每一份食材，都有始有终。',
     }),
   ).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'v1.2.3' })).toBeVisible()
-  await expect(page.getByRole('link', { name: '下载 Android APK' })).toHaveAttribute(
-    'href',
-    '/api/download/android',
-  )
+  await expect(
+    page.getByRole('heading', { name: 'Fridge Elf v1.2.3' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: '下载 Fridge Elf v1.2.3' }),
+  ).toHaveAttribute('href', '/api/download/android')
 
   await page.getByRole('link', { name: '打开在线 Demo' }).click()
   await expect(page).toHaveURL(/\/demo$/)

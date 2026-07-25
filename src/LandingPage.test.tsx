@@ -32,11 +32,14 @@ describe('LandingPage', () => {
       '/demo',
     )
     await waitFor(() =>
-      expect(screen.getByText('v1.2.3')).toBeVisible(),
+      expect(screen.getByRole('heading', {
+        name: 'Fridge Elf v1.2.3',
+      })).toBeVisible(),
     )
     expect(
-      screen.getByRole('link', { name: '下载 Android APK' }),
+      screen.getByRole('link', { name: '下载 Fridge Elf v1.2.3' }),
     ).toHaveAttribute('href', '/api/download/android')
+    expect(screen.getByText('SHA-256 可校验')).toBeVisible()
   })
 
   it('keeps the demo available when release metadata cannot load', async () => {
@@ -46,10 +49,18 @@ describe('LandingPage', () => {
 
     render(<LandingPage fetcher={fetcher} />)
 
-    expect(await screen.findByText('APK 正在准备中')).toBeVisible()
+    expect(
+      await screen.findByText('正式版已完成 · 公开下载配置中'),
+    ).toBeVisible()
+    expect(
+      screen.getByRole('heading', { name: 'Fridge Elf v1.0.0' }),
+    ).toBeVisible()
+    expect(
+      screen.getByText(/仓库公开后，这里会自动开放下载/),
+    ).toBeVisible()
     expect(screen.getByRole('link', { name: '打开在线 Demo' })).toBeVisible()
     expect(
-      screen.queryByRole('link', { name: '下载 Android APK' }),
+      screen.queryByRole('link', { name: /下载 Fridge Elf/ }),
     ).not.toBeInTheDocument()
   })
 
@@ -80,8 +91,14 @@ describe('LandingPage', () => {
       screen.getByRole('heading', { name: '今天先从冰箱开始。' }),
     ).toBeVisible()
     expect(
+      screen.getByRole('heading', {
+        name: '家里的东西，也应该留下可以继续使用的信息。',
+      }),
+    ).toBeVisible()
+    expect(
       screen.queryByText(/T5AI|Android、Wi-Fi|MQTT|DashScope/),
     ).not.toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent('Smart Tag')
   })
 
   it('links the long-form story through product-level section navigation', () => {

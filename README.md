@@ -167,7 +167,7 @@ HEADLESS_IMAGE_GATEWAY_MODEL=...
 
 ## Android Release
 
-当前状态：Android 仓库只有 **Pre-release Debug APK**，尚未发布可被 `/releases/latest` 读取的稳定 Release，因此 Landing Page 会显示「APK 正在准备中」。
+当前正式版本为 **Fridge Elf v1.0.0**。Landing Page 只消费符合下方命名契约的稳定 Release，并展示版本号、安装包大小与 SHA-256 校验状态。
 
 稳定版本使用 `vX.Y.Z` Tag，并包含同名资产：
 
@@ -176,7 +176,7 @@ fridge-elf-android-vX.Y.Z.apk
 fridge-elf-android-vX.Y.Z.apk.sha256
 ```
 
-符合约定的正式 Release 发布后，Vercel Landing Page 最多约 5 分钟更新下载信息。Release 与 APK 的构建、签名仍由 Android 仓库负责，这个 Web 仓库只消费发布结果。
+Android 仓库公开后，Vercel Landing Page 无需重新发版即可自动开放下载；在公开前，页面会诚实显示「正式版已完成 · 公开下载配置中」，在线 Demo 始终可用。Release 与 APK 的构建、签名仍由 Android 仓库负责，这个 Web 仓库只消费发布结果。
 
 ## 一次推送，两个独立入口
 

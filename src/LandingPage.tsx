@@ -78,6 +78,10 @@ export function LandingPage({
     onOpenDemo()
   }
 
+  const releaseTitle =
+    release?.title?.trim() ||
+    (release ? `Fridge Elf ${release.tagName}` : 'Fridge Elf v1.0.0')
+
   const demoLink = (
     <a
       className="landing-button landing-button-primary"
@@ -94,14 +98,16 @@ export function LandingPage({
     <a
       className="landing-button landing-button-secondary"
       href="/api/download/android"
-      aria-label="下载 Android APK"
+      aria-label={`下载 ${releaseTitle}`}
     >
-      下载 Android APK
+      下载 {releaseTitle}
       <span aria-hidden="true">↓</span>
     </a>
   ) : (
     <span className="landing-button landing-button-disabled" aria-live="polite">
-      {releaseUnavailable ? 'APK 正在准备中' : '正在读取版本…'}
+      {releaseUnavailable
+        ? '正式版已完成 · 公开下载配置中'
+        : '正在读取 Fridge Elf 版本…'}
     </span>
   )
 
@@ -342,7 +348,7 @@ export function LandingPage({
         <section className="landing-release pixel-card" aria-label="最新版本">
           <div>
             <span className="landing-section-label">LATEST RELEASE</span>
-            <h2>{release?.tagName ?? '等待首个正式版本'}</h2>
+            <h2>{releaseTitle}</h2>
           </div>
           {release ? (
             <dl className="landing-release-meta">
@@ -358,10 +364,18 @@ export function LandingPage({
                 <dt>系统</dt>
                 <dd>Android 8.0+</dd>
               </div>
+              <div>
+                <dt>校验</dt>
+                <dd>
+                  {release.checksumUrl
+                    ? 'SHA-256 可校验'
+                    : 'Release 页面提供'}
+                </dd>
+              </div>
             </dl>
           ) : (
             <p className="landing-release-empty">
-              正式版本发布后，最新安装包会自动出现在这里。现在可以先打开在线
+              Fridge Elf v1.0.0 正式版已经完成。仓库公开后，这里会自动开放下载；现在可以先打开在线
               Demo，完整体验冰箱精灵。
             </p>
           )}
@@ -387,14 +401,14 @@ export function LandingPage({
               <a
                 className="landing-button landing-button-secondary"
                 href="/api/download/android"
-                aria-label="获取 Android APK"
+                aria-label={`获取 ${releaseTitle}`}
               >
-                获取 Android APK
+                获取 {releaseTitle}
                 <span aria-hidden="true">↓</span>
               </a>
             ) : (
               <span className="landing-button landing-button-disabled">
-                获取 Android APK · 准备中
+                Fridge Elf v1.0.0 · 公开下载配置中
               </span>
             )}
             {release ? (
@@ -414,7 +428,7 @@ export function LandingPage({
 
       <footer className="landing-footer">
         <span>FRIDGE ELF · ADVX 2026</span>
-        <span>HACKATHON DEMO · WORK IN PROGRESS</span>
+        <span>HACKATHON DEMO · ANDROID v1.0.0</span>
       </footer>
     </main>
   )
