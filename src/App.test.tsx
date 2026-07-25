@@ -8,6 +8,7 @@ import {
 import { describe, expect, it, vi } from 'vitest'
 import type { DemoAgentInput, DemoAgentResponse } from './ai/types'
 import type { NativeEvent } from './bridge/types'
+import { createDemoRuntime } from './demo/demoRuntime'
 import { App, type AppInventoryRuntime } from './App'
 
 describe('App', () => {
@@ -28,7 +29,8 @@ describe('App', () => {
       'aria-selected',
       'true',
     )
-    expect(screen.getAllByTestId('storage-segment')).toHaveLength(12)
+    expect(screen.getByRole('button', { name: '番茄，4个' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '牛奶，1L' })).toBeVisible()
   })
 
   it('opens the prototype food detail and fridge preview dialogs', () => {
@@ -73,6 +75,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('tab', { name: '食谱' }))
     fireEvent.click(screen.getByRole('button', { name: /周规划/ }))
     fireEvent.click(screen.getByRole('button', { name: /周一/ }))
+    fireEvent.click(screen.getByRole('button', { name: /晚餐/ }))
     fireEvent.click(
       screen.getAllByRole('button', { name: /三文鱼谷物碗/ }).at(-1)!,
     )
@@ -91,10 +94,16 @@ describe('App', () => {
             : '在线回答：番茄和鸡蛋可以直接使用。',
       }),
     )
-    render(<App demoAgentRequester={requester} />)
+    render(
+      <App
+        inventoryRuntime={createDemoRuntime({
+          agentRequester: requester,
+        })}
+      />,
+    )
     fireEvent.click(screen.getByRole('button', { name: '跳过' }))
     fireEvent.click(screen.getByRole('tab', { name: '食谱' }))
-    fireEvent.click(screen.getByRole('button', { name: /AI 食谱推荐/ }))
+    fireEvent.click(screen.getByRole('button', { name: /AI 智能推荐/ }))
     expect(
       await screen.findByText('在线推荐：先吃今天临期的番茄。'),
     ).toBeVisible()
@@ -112,10 +121,10 @@ describe('App', () => {
       }),
     )
     fireEvent.click(screen.getByRole('button', { name: '关闭' }))
-    fireEvent.click(screen.getByRole('button', { name: /语音/ }))
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toHaveTextContent('Recipe Agent')
+    fireEvent.change(screen.getByRole('textbox', { name: '向冰箱提问' }), {
+      target: { value: '今晚用番茄和鸡蛋能做什么？' },
     })
+    fireEvent.click(screen.getByRole('button', { name: '询问' }))
     expect(
       await screen.findByText('在线回答：番茄和鸡蛋可以直接使用。'),
     ).toBeVisible()
@@ -131,13 +140,13 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: '跳过' }))
     fireEvent.click(screen.getByRole('tab', { name: '购物' }))
-    const milk = screen.getByRole('button', { name: /牛奶.*2L/ })
+    const milk = screen.getByRole('button', { name: '完成 牛奶' })
     fireEvent.click(milk)
     expect(milk).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(screen.getByRole('tab', { name: '显示屏' }))
     fireEvent.click(screen.getByRole('tab', { name: '购物' }))
-    expect(screen.getByRole('button', { name: /牛奶.*2L/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: '恢复 牛奶' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
@@ -153,11 +162,12 @@ describe('App', () => {
     expect(onRestartDemo).toHaveBeenCalledOnce()
   })
 
-  it('lets Android Back close a modal then restore the previous tab', () => {
+  it('lets Android Back close a modal then restore the previous tab', async () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: '跳过' }))
     fireEvent.click(screen.getByRole('tab', { name: '食谱' }))
-    fireEvent.click(screen.getByRole('button', { name: /AI 食谱推荐/ }))
+    fireEvent.click(screen.getByRole('button', { name: /AI 智能推荐/ }))
+    await screen.findByRole('dialog')
 
     const hostWindow = window as Window & {
       handleAndroidBack?: () => boolean
@@ -166,6 +176,12 @@ describe('App', () => {
       expect(hostWindow.handleAndroidBack?.()).toBe(true)
     })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: '食谱' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    )
     act(() => {
       expect(hostWindow.handleAndroidBack?.()).toBe(true)
     })
@@ -181,6 +197,7 @@ describe('App', () => {
   it('renders real NativeBridge inventory and reacts to native status events', async () => {
     let listener: ((event: NativeEvent) => void) | undefined
     const runtime: AppInventoryRuntime = {
+      ...createDemoRuntime(),
       mode: 'native',
       inventory: {
         getItems: async () => [
@@ -194,6 +211,8 @@ describe('App', () => {
           },
         ],
         addItem: vi.fn(),
+        removeItem: vi.fn(),
+        updateItemQuantity: vi.fn(),
         getMqttStatus: async () => ({
           connected: false,
           detail: '等待设备',

@@ -32,8 +32,8 @@ describe('Demo world snapshot', () => {
 
   it('includes planned meals and only the existing recipe catalogue', () => {
     const planner = emptyPlanner()
-    planner.mon = 'recipe-tomato-egg-bowl'
-    planner.tue = 'recipe-not-found'
+    planner.mon.dinner = 'recipe-tomato-egg-bowl'
+    planner.tue.breakfast = 'recipe-not-found'
 
     const snapshot = buildDemoWorldSnapshot({
       inventory: [],

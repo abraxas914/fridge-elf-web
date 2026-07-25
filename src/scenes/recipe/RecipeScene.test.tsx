@@ -19,19 +19,22 @@ import { RecipeDetailModal } from './RecipeDetailModal'
 import { RecipeScene } from './RecipeScene'
 
 describe('RecipeScene', () => {
-  it('ports the manual Agent composer and two approved recipe tools', async () => {
+  it('ports the manual Agent composer and managed recommendation tool', async () => {
     const onOpenAgent = vi.fn(async () => undefined)
+    const onOpenAi = vi.fn()
     render(
       <RecipeScene
         onOpenRecipe={vi.fn()}
         onOpenPlanner={vi.fn()}
-        onOpenAi={vi.fn()}
+        onOpenAi={onOpenAi}
         onOpenAgent={onOpenAgent}
         onSelectTab={vi.fn()}
         onToast={vi.fn()}
       />,
     )
     expect(screen.getByRole('button', { name: /个人收藏食谱/ })).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: /AI 智能推荐/ }))
+    expect(onOpenAi).toHaveBeenCalledOnce()
     expect(screen.getByRole('button', { name: /周规划/ })).toBeVisible()
     fireEvent.change(screen.getByRole('textbox', { name: '向冰箱提问' }), {
       target: { value: '今晚用番茄和鸡蛋能做什么？' },

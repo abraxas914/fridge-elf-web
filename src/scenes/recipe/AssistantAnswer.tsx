@@ -1,8 +1,12 @@
 import type { AssistantRecipe, AssistantReply } from '../../bridge/types'
+import type { SavedRecipe } from '../../app/recipes'
+import { RecipeMini } from './RecipeScene'
 
 interface AssistantAnswerProps {
   question: string
   reply: AssistantReply
+  existingRecipes?: SavedRecipe[]
+  onOpenRecipe?: (recipe: SavedRecipe) => void
   onAddShopping: () => void
   onSaveRecipe: (recipe: AssistantRecipe) => void
 }
@@ -10,6 +14,8 @@ interface AssistantAnswerProps {
 export function AssistantAnswer({
   question,
   reply,
+  existingRecipes = [],
+  onOpenRecipe,
   onAddShopping,
   onSaveRecipe,
 }: AssistantAnswerProps) {
@@ -17,6 +23,18 @@ export function AssistantAnswer({
     <div className="assistant-answer">
       <div className="assistant-question">你问：{question}</div>
       <p>{reply.answer}</p>
+      {existingRecipes.length && onOpenRecipe ? (
+        <div className="recipe-strip">
+          {existingRecipes.map((recipe) => (
+            <RecipeMini
+              key={recipe.id}
+              recipe={recipe}
+              label="AGENT PICK"
+              onOpen={onOpenRecipe}
+            />
+          ))}
+        </div>
+      ) : null}
       {reply.recipes?.map((recipe) => (
         <article className="assistant-recipe" key={recipe.name}>
           <h3>{recipe.name}</h3>

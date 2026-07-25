@@ -1,3 +1,5 @@
+import type { AssistantReply } from '../bridge/types'
+
 export interface DemoWorldSnapshot {
   inventory: Array<{
     name: string
@@ -7,7 +9,7 @@ export interface DemoWorldSnapshot {
   }>
   plannedMeals: Array<{
     day: string
-    meal: 'dinner'
+    meal: 'breakfast' | 'lunch' | 'dinner'
     recipeName: string
   }>
   missingItems: string[]
@@ -31,4 +33,21 @@ export interface DemoAgentInput {
   mode: 'agent' | 'recommend'
   message?: string
   snapshot: DemoWorldSnapshot
+}
+
+export type DemoAssistantIntent =
+  | 'agent'
+  | 'recommend'
+  | 'inventory-voice'
+  | 'shopping-voice'
+
+export interface DemoAssistantInput {
+  intent: DemoAssistantIntent
+  question: string
+  snapshot: DemoWorldSnapshot
+}
+
+export interface DemoAssistantReply extends AssistantReply {
+  existingRecipeIds?: string[]
+  notices?: string[]
 }

@@ -56,6 +56,7 @@ export function RecipeScene(props: RecipeSceneProps) {
   const speechSession = useRef<SpeechSession<string> | null>(null)
   const tools = [
     { cls: 'a', icon: 'heart' as const, title: '个人收藏食谱', sub: 'FAVORITES', action: props.onOpenFavorites ?? (() => props.onToast('个人收藏食谱暂不可用')) },
+    { cls: 'b', icon: 'bot' as const, title: 'AI 智能推荐', sub: 'MANAGED AGENT', action: props.onOpenAi ?? (() => props.onToast('智能推荐暂不可用')) },
     { cls: 'c', icon: 'calendar' as const, title: '周规划', sub: 'MEAL PLAN', action: props.onOpenPlanner },
   ]
 

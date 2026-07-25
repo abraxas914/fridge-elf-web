@@ -20,6 +20,7 @@
     "src/app/state.ts",
     "src/bridge/browserMock.ts",
     "src/components/AppHeader.tsx",
+    "src/components/AppShell.css",
     "src/components/AppShell.tsx",
     "src/features/recipeIllustration/RecipeIllustrationPanel.tsx",
     "src/scenes/profile/ProfileScene.tsx",

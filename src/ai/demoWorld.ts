@@ -1,4 +1,8 @@
-import type { PlannerState, PresentedFood } from '../app/types'
+import type {
+  PlannerMealKey,
+  PlannerState,
+  PresentedFood,
+} from '../app/types'
 import { RECIPES } from '../fixtures/goldenFixture'
 import type { DemoWorldSnapshot } from './types'
 
@@ -26,20 +30,20 @@ export function buildDemoWorldSnapshot(
       category: food.category,
       expiryLevel: expiryLevel(food.expiresInDays),
     })),
-    plannedMeals: Object.entries(input.planner).flatMap(
-      ([day, recipeId]) => {
+    plannedMeals: Object.entries(input.planner).flatMap(([day, meals]) =>
+      Object.entries(meals).flatMap(([meal, recipeId]) => {
         if (!recipeId) return []
         const recipe = RECIPES.find((candidate) => candidate.id === recipeId)
         return recipe
           ? [
               {
                 day,
-                meal: 'dinner' as const,
+                meal: meal as PlannerMealKey,
                 recipeName: recipe.cn,
               },
             ]
           : []
-      },
+      }),
     ),
     missingItems: [...input.missingItems],
     availableRecipes: RECIPES.map((recipe) => ({

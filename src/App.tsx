@@ -6,6 +6,11 @@ import {
   useRef,
   useState,
 } from 'react'
+import { buildDemoWorldSnapshot } from './ai/demoWorld'
+import type {
+  DemoAssistantIntent,
+  DemoAssistantReply,
+} from './ai/types'
 import { createBrowserAudio } from './app/browserAudio'
 import {
   appReducer,
@@ -25,11 +30,11 @@ import {
 import type {
   AddInventoryItem,
   AssistantRecipe,
-  AssistantReply,
   AssistantShoppingItem,
   MqttStatus,
 } from './bridge/types'
 import { AppShell } from './components/AppShell'
+import { createDemoRuntime } from './demo/demoRuntime'
 import './components/EntryComposer.css'
 import { KitchenScene } from './scenes/KitchenScene'
 import { DisplayScene } from './scenes/display/DisplayScene'
@@ -76,15 +81,21 @@ export type AppInventoryRuntime = AppRuntime
 
 export function App({
   inventoryRuntime: providedRuntime,
+  onRestartDemo,
 }: {
   inventoryRuntime?: AppRuntime
+  onRestartDemo?: () => void
 } = {}) {
   const tabHistory = useRef<AppTab[]>([])
   const audioRef = useRef<ReturnType<typeof createBrowserAudio> | null>(null)
   if (!audioRef.current) audioRef.current = createBrowserAudio()
   const audio = audioRef.current
   const [runtime] = useState<AppRuntime>(
-    () => providedRuntime ?? selectInventoryRuntime(),
+    () =>
+      providedRuntime ??
+      (window.NativeBridge
+        ? selectInventoryRuntime()
+        : createDemoRuntime()),
   )
   const inventoryPort = runtime.inventory
   const [inventoryItems, setInventoryItems] = useState<readonly PresentedFood[]>(
@@ -250,26 +261,28 @@ export function App({
     })
   }, [saveFavoriteRecipe])
 
-  const assistantContext = useCallback((question: string) => {
-    let profile: unknown = {}
-    try {
-      profile = JSON.parse(localStorage.getItem('fridge-profile-v1') ?? '{}')
-    } catch {
-      profile = {}
-    }
-    return {
+  const missingIngredients = useMemo(
+    () =>
+      deriveMissingIngredients(
+        state.planner,
+        inventoryItems.flatMap((food) => [food.key, food.name]),
+        favoriteRecipes,
+      ),
+    [favoriteRecipes, inventoryItems, state.planner],
+  )
+
+  const assistantContext = useCallback(
+    (question: string, intent: DemoAssistantIntent = 'agent') => ({
+      intent,
       question,
-      inventory: inventoryItems.map((food) => ({
-        name: food.name,
-        quantity: food.quantity,
-        storage: food.storage,
-        addedDate: food.addedDate,
-        expiryDate: food.expiryDate,
-        status: food.status,
-      })),
-      profile,
-    }
-  }, [inventoryItems])
+      snapshot: buildDemoWorldSnapshot({
+        inventory: inventoryItems,
+        planner: state.planner,
+        missingItems: missingIngredients,
+      }),
+    }),
+    [inventoryItems, missingIngredients, state.planner],
+  )
 
   const ensureAssistantConfigured = useCallback(async () => {
     const assistant =
@@ -297,9 +310,7 @@ export function App({
           throw new Error('请先配置智能助手')
         }
         const reply = await runtime.assistant.ask(
-          assistantContext(
-            `请把下面这句话解析成需要放入冰箱的食物清单，并只写入 shoppingItems；每个食物保留名称和数量：${text}`,
-          ),
+          assistantContext(text, 'inventory-voice'),
         )
         const parsedItems = reply.shoppingItems.length
           ? reply.shoppingItems
@@ -352,6 +363,24 @@ export function App({
     }
   }, [assistantContext, ensureAssistantConfigured, runtime.assistant])
 
+  const askRecommendation = useCallback(async () => {
+    if (!(await ensureAssistantConfigured())) return
+    const question = '根据当前库存和本周计划推荐现在最适合做的菜'
+    dispatch({
+      type: 'open-modal',
+      kind: 'assistant-loading',
+      payload: question,
+    })
+    const reply = await runtime.assistant.ask(
+      assistantContext(question, 'recommend'),
+    )
+    dispatch({
+      type: 'open-modal',
+      kind: 'assistant-result',
+      payload: { question, reply },
+    })
+  }, [assistantContext, ensureAssistantConfigured, runtime.assistant])
+
   const enterApp = useCallback(() => {
     tabHistory.current = []
     dispatch({ type: 'enter-app' })
@@ -385,16 +414,6 @@ export function App({
       delete window.handleAndroidBack
     }
   }, [state.currentTab, state.modal, state.scene])
-  const missingIngredients = useMemo(
-    () =>
-      deriveMissingIngredients(
-        state.planner,
-        inventoryItems.flatMap((food) => [food.key, food.name]),
-        favoriteRecipes,
-      ),
-    [favoriteRecipes, inventoryItems, state.planner],
-  )
-
   if (state.scene === 'kitchen') {
     return (
       <div id="stage">
@@ -544,12 +563,25 @@ export function App({
             content: (() => {
               const payload = state.modal?.payload as {
                 question: string
-                reply: AssistantReply
+                reply: DemoAssistantReply
               }
+              const existingRecipeIds = new Set(
+                payload.reply.existingRecipeIds ?? [],
+              )
               return (
                 <AssistantAnswer
                   question={payload.question}
                   reply={payload.reply}
+                  existingRecipes={favoriteRecipes.filter((recipe) =>
+                    existingRecipeIds.has(recipe.id),
+                  )}
+                  onOpenRecipe={(recipe) =>
+                    dispatch({
+                      type: 'open-modal',
+                      kind: 'recipe-detail',
+                      payload: recipe,
+                    })
+                  }
                   onAddShopping={() => {
                     setShoppingItems((current) => [
                       ...current,
@@ -599,6 +631,9 @@ export function App({
           audio.play('tick')
           dispatch({ type: 'close-modal' })
         }}
+        onRestartDemo={
+          runtime.mode === 'browser-mock' ? onRestartDemo : undefined
+        }
       >
         {state.currentTab === 'fridge' ? (
           <FridgeScene
@@ -635,9 +670,7 @@ export function App({
                     throw new Error('请先配置智能助手')
                   }
                   const reply = await runtime.assistant.ask(
-                    assistantContext(
-                      `请把下面这句话只解析成要购买的食物清单，并写入 shoppingItems：${text}`,
-                    ),
+                    assistantContext(text, 'shopping-voice'),
                   )
                   if (reply.shoppingItems.length) return reply.shoppingItems
                   return [{
@@ -660,6 +693,7 @@ export function App({
             onOpenFavorites={() =>
               dispatch({ type: 'open-modal', kind: 'favorites' })
             }
+            onOpenAi={askRecommendation}
             onOpenAgent={askAssistant}
             onSpeechStart={() => runtime.speech.start()}
             onToast={(message) =>

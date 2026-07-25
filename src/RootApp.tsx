@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
+import { createDemoRuntime } from './demo/demoRuntime'
 import { LandingPage } from './LandingPage'
 
 const DemoApp = lazy(() =>
@@ -11,6 +12,10 @@ function routeFor(pathname: string) {
 
 export function RootApp() {
   const [route, setRoute] = useState(() => routeFor(window.location.pathname))
+  const [demoSession, setDemoSession] = useState(() => ({
+    key: 0,
+    runtime: createDemoRuntime(),
+  }))
 
   useEffect(() => {
     const syncRoute = () => setRoute(routeFor(window.location.pathname))
@@ -26,7 +31,16 @@ export function RootApp() {
   if (route === 'demo') {
     return (
       <Suspense fallback={<div className="route-loading">正在打开 Demo…</div>}>
-        <DemoApp />
+        <DemoApp
+          key={demoSession.key}
+          inventoryRuntime={demoSession.runtime}
+          onRestartDemo={() =>
+            setDemoSession((current) => ({
+              key: current.key + 1,
+              runtime: createDemoRuntime(),
+            }))
+          }
+        />
       </Suspense>
     )
   }
