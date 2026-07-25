@@ -71,4 +71,28 @@ describe('release endpoints', () => {
       error: { code: 'NO_RELEASE', message: '暂无可下载的正式 APK' },
     })
   })
+
+  it('retries the public release API without a restricted token after 404', async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({ message: 'Not Found' }, { status: 404 }),
+      )
+      .mockResolvedValueOnce(Response.json(upstreamRelease))
+
+    const response = await handleLatestReleaseRequest(
+      new Request('https://fridgeelf.rth1.xyz/api/releases/latest'),
+      { GITHUB_RELEASE_TOKEN: 'restricted-token' },
+      fetcher,
+    )
+
+    expect(response.status).toBe(200)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    expect(fetcher.mock.calls[0][1]?.headers).toMatchObject({
+      authorization: 'Bearer restricted-token',
+    })
+    expect(fetcher.mock.calls[1][1]?.headers).not.toHaveProperty(
+      'authorization',
+    )
+  })
 })
