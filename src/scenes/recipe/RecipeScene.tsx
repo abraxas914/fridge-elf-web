@@ -41,6 +41,7 @@ interface RecipeSceneProps {
   onOpenPlanner: () => void
   onOpenFavorites?: () => void
   onOpenAi?: () => void
+  onOpenIllustration?: () => void
   onOpenAgent: (text: string) => Promise<void>
   onSpeechStart?: () => SpeechSession<string>
   onSpeech?: () => Promise<string>
@@ -58,6 +59,7 @@ export function RecipeScene(props: RecipeSceneProps) {
     { cls: 'a', icon: 'heart' as const, title: '个人收藏食谱', sub: 'FAVORITES', action: props.onOpenFavorites ?? (() => props.onToast('个人收藏食谱暂不可用')) },
     { cls: 'b', icon: 'bot' as const, title: '今日推荐', sub: 'AI PICKS', action: props.onOpenAi },
     { cls: 'c', icon: 'calendar' as const, title: '周规划', sub: 'MEAL PLAN', action: props.onOpenPlanner },
+    { cls: 'd', icon: 'camera' as const, title: 'AI 食谱插画', sub: 'IMAGE2', action: props.onOpenIllustration },
   ].filter(
     (tool): tool is typeof tool & { action: () => void } =>
       typeof tool.action === 'function',

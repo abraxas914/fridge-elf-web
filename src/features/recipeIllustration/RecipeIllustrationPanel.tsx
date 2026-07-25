@@ -14,6 +14,7 @@ interface RecipeIllustrationPanelProps {
   managed: boolean
   illustration: RecipeIllustrationPort
   pollIntervalMs?: number
+  singleImage?: boolean
 }
 
 export function RecipeIllustrationPanel({
@@ -21,6 +22,7 @@ export function RecipeIllustrationPanel({
   managed,
   illustration,
   pollIntervalMs = 750,
+  singleImage = false,
 }: RecipeIllustrationPanelProps) {
   const [styleId, setStyleId] =
     useState<RecipeIllustrationStyleId>('xiaohei')
@@ -141,7 +143,7 @@ export function RecipeIllustrationPanel({
           className="recipe-illustration-primary"
           disabled={starting}
           type="button"
-          onClick={() => void start()}
+          onClick={() => void start(singleImage ? [1] : undefined)}
         >
           {starting
             ? '正在提交…'
@@ -157,8 +159,9 @@ export function RecipeIllustrationPanel({
           className="recipe-illustration-progress"
           role="status"
         >
-          正在生成第 {Math.min(job.completedPages + 1, job.totalPages)}/
-          {job.totalPages} 页
+          {singleImage
+            ? '正在生成食谱插画'
+            : `正在生成第 ${Math.min(job.completedPages + 1, job.totalPages)}/${job.totalPages} 页`}
         </div>
       ) : null}
 
@@ -174,10 +177,14 @@ export function RecipeIllustrationPanel({
             <figure key={page.index}>
               <img
                 src={page.imageUrl}
-                alt={`${recipe.title} · ${selectedStyle.label} · 第${page.index}页`}
+                alt={
+                  singleImage
+                    ? `${recipe.title} · ${selectedStyle.label}`
+                    : `${recipe.title} · ${selectedStyle.label} · 第${page.index}页`
+                }
               />
               <figcaption>
-                <span>第 {page.index} 页</span>
+                {singleImage ? null : <span>第 {page.index} 页</span>}
                 <a href={page.imageUrl} download={`${recipe.id}-${page.index}.png`}>
                   保存图片
                 </a>
@@ -185,7 +192,7 @@ export function RecipeIllustrationPanel({
                   type="button"
                   onClick={() => void start([page.index])}
                 >
-                  重新生成第{page.index}页
+                  {singleImage ? '重新生成图片' : `重新生成第${page.index}页`}
                 </button>
               </figcaption>
             </figure>

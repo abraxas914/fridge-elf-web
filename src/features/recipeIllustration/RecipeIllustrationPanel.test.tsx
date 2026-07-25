@@ -97,6 +97,40 @@ describe('RecipeIllustrationPanel', () => {
     ).toBeVisible()
   })
 
+  it('generates and presents exactly one page in single-image mode', async () => {
+    const port = illustration()
+    render(
+      <RecipeIllustrationPanel
+        managed
+        illustration={port}
+        recipe={RECIPE}
+        singleImage
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '生成食谱插画' }),
+    )
+
+    await waitFor(() =>
+      expect(port.start).toHaveBeenCalledWith({
+        contractVersion: 1,
+        recipe: RECIPE,
+        styleId: 'xiaohei',
+        pageIndexes: [1],
+      }),
+    )
+    expect(
+      await screen.findByRole('img', {
+        name: '番茄炒蛋 · 小黑手绘',
+      }),
+    ).toBeVisible()
+    expect(screen.queryByText('第 1 页')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: '重新生成图片' }),
+    ).toBeVisible()
+  })
+
   it('polls a running job and announces page progress', async () => {
     const running: RecipeIllustrationJob = {
       id: 'job-running',
