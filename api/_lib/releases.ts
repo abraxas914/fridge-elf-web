@@ -35,17 +35,33 @@ async function loadRelease(
   if (environment.GITHUB_RELEASE_TOKEN) {
     headers.authorization = `Bearer ${environment.GITHUB_RELEASE_TOKEN}`
   }
-  let response = await fetcher(RELEASE_URL, { headers })
-  if (response.status === 404 && environment.GITHUB_RELEASE_TOKEN) {
-    response = await fetcher(RELEASE_URL, { headers: publicHeaders })
+  const parseResponse = async (response: Response) => {
+    if (response.status === 404) return null
+    if (!response.ok) {
+      throw new Error(`GitHub release API returned ${response.status}`)
+    }
+    try {
+      return parseLatestRelease(await response.json())
+    } catch {
+      return null
+    }
   }
-  if (response.status === 404) return null
-  if (!response.ok) throw new Error(`GitHub release API returned ${response.status}`)
+
   try {
-    return parseLatestRelease(await response.json())
-  } catch {
-    return null
+    const release = await parseResponse(
+      await fetcher(RELEASE_URL, { cache: 'no-store', headers }),
+    )
+    if (release || !environment.GITHUB_RELEASE_TOKEN) return release
+  } catch (error) {
+    if (!environment.GITHUB_RELEASE_TOKEN) throw error
   }
+
+  return parseResponse(
+    await fetcher(RELEASE_URL, {
+      cache: 'no-store',
+      headers: publicHeaders,
+    }),
+  )
 }
 
 export async function handleLatestReleaseRequest(
