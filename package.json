@@ -9,6 +9,7 @@
     "build:rth": "RTH_BUILD=1 npm run build && node scripts/prepare-rth-dist.mjs",
     "deploy:rth": "deno -Ar https://host.retiehe.com/cli deploy",
     "test:rth-html": "node --test scripts/retinbox-html.node-test.mjs scripts/retinbox-workflow.node-test.mjs",
+    "test:baseline": "node --test scripts/upstream-baseline.node-test.mjs && node scripts/verify-upstream-baseline.mjs",
     "test:gateway-probe": "node --test scripts/probe-headless-gateway.node-test.mjs",
     "probe:gateway": "node scripts/probe-headless-gateway.mjs",
     "typecheck:api": "tsc --noEmit -p tsconfig.api.json",

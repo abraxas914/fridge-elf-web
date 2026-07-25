@@ -1,0 +1,30 @@
+{
+  "repository": "https://github.com/YantingShen-dev/fridge_app.git",
+  "tag": "v1.0.0",
+  "commit": "50364b2",
+  "sourcePath": "apps/android/web",
+  "productRoots": [
+    "src/app",
+    "src/bridge",
+    "src/catalog",
+    "src/components",
+    "src/features",
+    "src/fixtures",
+    "src/scenes",
+    "src/styles"
+  ],
+  "allowedOverrides": [
+    "src/App.tsx",
+    "src/app/ports.ts",
+    "src/app/recipes.ts",
+    "src/app/state.ts",
+    "src/bridge/browserMock.ts",
+    "src/components/AppHeader.tsx",
+    "src/components/AppShell.tsx",
+    "src/features/recipeIllustration/RecipeIllustrationPanel.tsx",
+    "src/scenes/profile/ProfileScene.tsx",
+    "src/scenes/recipe/AssistantAnswer.tsx",
+    "src/scenes/recipe/RecipeScene.tsx"
+  ],
+  "files": {}
+}
