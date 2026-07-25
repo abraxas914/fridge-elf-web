@@ -68,4 +68,17 @@ describe('Vercel API packaging', () => {
     expect(example).not.toMatch(/^VITE_.*(?:KEY|SECRET|TOKEN)=/m)
     expect(example).not.toMatch(/^sk-[A-Za-z0-9]/m)
   })
+
+  it('documents the transcription route as a Vercel Firewall deployment invariant', () => {
+    const spec = readFileSync(
+      resolve('docs/WEB_PREVIEW_SPEC.md'),
+      'utf8',
+    )
+    expect(spec).toContain('Vercel Firewall')
+    expect(spec).toContain('/api/demo/transcribe')
+    expect(spec).toContain('麦克风仅允许同源 Demo 页面使用')
+    expect(spec).not.toContain(
+      '禁止 iframe、摄像头、麦克风和地理位置',
+    )
+  })
 })

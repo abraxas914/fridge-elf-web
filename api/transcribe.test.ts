@@ -70,6 +70,8 @@ function dependencies(
     sleep: vi.fn(async () => undefined),
     maxPolls: 4,
     pollIntervalMs: 2_000,
+    now: Date.now,
+    totalTimeoutMs: 120_000,
     ...overrides,
   }
 }
@@ -146,6 +148,24 @@ describe('anonymous Demo speech transcription BFF', () => {
     expect(invalidMime.status).toBe(415)
     expect(oversized.status).toBe(413)
     expect(fetcher).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['audio/webm;codecs=opus', 'voice.webm'],
+    ['audio/ogg; codecs=opus', 'voice.ogg'],
+  ])('accepts browser codec parameters in %s', async (type, name) => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(null, { status: 429 }),
+    )
+
+    const response = await handleDemoTranscribeRequest(
+      request({ contents: 'voice', name, type }),
+      environment,
+      dependencies(fetcher),
+    )
+
+    expect(response.status).toBe(429)
+    expect(fetcher).toHaveBeenCalledOnce()
   })
 
   it('uploads last, submits fun-asr, polls, and returns bounded transcript text', async () => {
@@ -340,6 +360,92 @@ describe('anonymous Demo speech transcription BFF', () => {
       },
     })
     expect(deps.sleep).toHaveBeenCalledTimes(1)
+  })
+
+  it('enforces one deadline across upload, submission, polling, and results', async () => {
+    let now = 1_000
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(policyResponse())
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(taskResponse('PENDING'))
+      .mockImplementation(async () => taskResponse('RUNNING'))
+    const sleep = vi.fn(async (milliseconds: number) => {
+      now += milliseconds
+    })
+    const deps = dependencies(fetcher, {
+      maxPolls: 100,
+      pollIntervalMs: 2_000,
+      totalTimeoutMs: 5_000,
+      now: () => now,
+      sleep,
+    })
+
+    const response = await handleDemoTranscribeRequest(
+      request(),
+      environment,
+      deps,
+    )
+
+    expect(response.status).toBe(504)
+    expect(await response.json()).toEqual({
+      error: {
+        code: 'TRANSCRIPTION_TIMEOUT',
+        message: '语音识别等待超时，请重试',
+      },
+    })
+    expect(sleep).toHaveBeenNthCalledWith(1, 2_000)
+    expect(sleep).toHaveBeenNthCalledWith(2, 2_000)
+    expect(sleep).toHaveBeenNthCalledWith(3, 1_000)
+    expect(fetcher).toHaveBeenCalledTimes(6)
+    for (const [, init] of fetcher.mock.calls) {
+      expect(init?.signal).toBeInstanceOf(AbortSignal)
+    }
+  })
+
+  it('reports 504 when reading the final result exhausts the deadline', async () => {
+    let now = 1_000
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(policyResponse())
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(taskResponse('PENDING'))
+      .mockResolvedValueOnce(
+        taskResponse('SUCCEEDED', {
+          results: [{
+            subtask_status: 'SUCCEEDED',
+            transcription_url:
+              'https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/result.json',
+          }],
+        }),
+      )
+      .mockImplementationOnce(async () => {
+        const body = JSON.stringify({
+          transcripts: [{ text: 'deadline result' }],
+        })
+        return new Response(new ReadableStream({
+          start(controller) {
+            now = 6_000
+            controller.enqueue(new TextEncoder().encode(body))
+            controller.close()
+          },
+        }))
+      })
+
+    const response = await handleDemoTranscribeRequest(
+      request(),
+      environment,
+      dependencies(fetcher, {
+        now: () => now,
+        totalTimeoutMs: 5_000,
+      }),
+    )
+
+    expect(response.status).toBe(504)
+    expect(await response.json()).toEqual({
+      error: {
+        code: 'TRANSCRIPTION_TIMEOUT',
+        message: '语音识别等待超时，请重试',
+      },
+    })
   })
 
   it('cleans generic upstream failures and missing server configuration', async () => {

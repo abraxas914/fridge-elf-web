@@ -101,7 +101,7 @@ Body 使用 Fridge Elf 跨端 V1 契约。Web 同步接口每次只生成一页�
 - `DEMO_SESSION_SECRET`、`HEADLESS_GATEWAY_API_KEY` 和 `HEADLESS_IMAGE_GATEWAY_API_KEY` 只能存在于 Vercel Environment Variables 或本地未提交的 `.env.local`。
 - 禁止使用 `VITE_` 前缀保存任何 secret。
 - Retinbox CSP 只额外允许连接公开的 Vercel BFF；供应商地址和密钥不得进入静态构建。
-- 禁止 iframe、摄像头、麦克风和地理位置。
-- Vercel Firewall 分别限制 Agent、推荐与图片路由的每 IP 请求频率。
+- 禁止 iframe、摄像头和地理位置；麦克风仅允许同源 Demo 页面使用。
+- Vercel Firewall 分别限制 Agent、推荐与图片路由的每 IP 请求频率；部署时必须将 `/api/demo/transcribe` 纳入现有 Demo 路由限流规则。
 - 监控 401、422、429、502 和函数时长，不记录完整食谱或任何凭证。
 - 当前文本上游为 HTTP；比赛阶段接受 Vercel Function 到上游没有 TLS 的临时风险。

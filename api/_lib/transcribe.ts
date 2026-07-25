@@ -22,6 +22,8 @@ export interface TranscribeDependencies {
   sleep: (milliseconds: number) => Promise<unknown>
   maxPolls: number
   pollIntervalMs: number
+  now: () => number
+  totalTimeoutMs: number
 }
 
 interface UploadPolicy {
@@ -39,6 +41,8 @@ const MAX_RESULT_BYTES = 200_000
 const MAX_TRANSCRIPT_LENGTH = 2_000
 const REQUEST_TIMEOUT_MS = 20_000
 const POLL_REQUEST_TIMEOUT_MS = 10_000
+const DEFAULT_TOTAL_TIMEOUT_MS = 120_000
+const MAX_TOTAL_TIMEOUT_MS = 289_000
 const DEFAULT_MAX_POLLS = 60
 const DEFAULT_POLL_INTERVAL_MS = 2_000
 const ALLOWED_MIME_TYPES = new Map([
@@ -59,6 +63,41 @@ class SpeechGatewayError extends Error {
     super(code)
     this.name = 'SpeechGatewayError'
   }
+}
+
+function timeoutError() {
+  return new SpeechGatewayError(
+    504,
+    'TRANSCRIPTION_TIMEOUT',
+    '语音识别等待超时，请重试',
+  )
+}
+
+function remainingTime(
+  dependencies: TranscribeDependencies,
+  deadline: number,
+) {
+  const remaining = Math.ceil(deadline - dependencies.now())
+  if (remaining <= 0) throw timeoutError()
+  return remaining
+}
+
+function deadlineSignal(
+  dependencies: TranscribeDependencies,
+  deadline: number,
+  requestSignal: AbortSignal,
+  requestTimeoutMs: number,
+) {
+  const timeout = AbortSignal.timeout(
+    Math.max(
+      1,
+      Math.min(
+        requestTimeoutMs,
+        remainingTime(dependencies, deadline),
+      ),
+    ),
+  )
+  return AbortSignal.any([requestSignal, timeout])
 }
 
 function bearerToken(request: Request) {
@@ -121,17 +160,21 @@ async function fetchUpstream(
   fetcher: Fetcher,
   input: string,
   init: RequestInit,
+  dependencies: TranscribeDependencies,
+  deadline: number,
 ) {
   let response: Response
   try {
     response = await fetcher(input, init)
   } catch {
+    if (dependencies.now() >= deadline) throw timeoutError()
     throw new SpeechGatewayError(
       502,
       'TRANSCRIPTION_UNAVAILABLE',
       '语音识别暂时不可用，请重试',
     )
   }
+  remainingTime(dependencies, deadline)
   if (response.status === 429) {
     const retryAfter = response.headers.get('retry-after') ?? ''
     throw new SpeechGatewayError(
@@ -151,10 +194,21 @@ async function fetchUpstream(
   return response
 }
 
-async function safeJson(response: Response) {
+async function safeJson(
+  response: Response,
+  dependencies: TranscribeDependencies,
+  deadline: number,
+) {
+  let text: string
   try {
-    const text = await response.text()
-    if (!text || text.length > MAX_RESULT_BYTES) return null
+    text = await response.text()
+  } catch {
+    if (dependencies.now() >= deadline) throw timeoutError()
+    return null
+  }
+  remainingTime(dependencies, deadline)
+  if (!text || text.length > MAX_RESULT_BYTES) return null
+  try {
     return JSON.parse(text) as unknown
   } catch {
     return null
@@ -278,6 +332,8 @@ async function transcribe(
   apiKey: string,
   model: string,
   dependencies: TranscribeDependencies,
+  deadline: number,
+  requestSignal: AbortSignal,
 ) {
   const commonHeaders = {
     authorization: `Bearer ${apiKey}`,
@@ -288,10 +344,19 @@ async function transcribe(
     {
       method: 'GET',
       headers: commonHeaders,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: deadlineSignal(
+        dependencies,
+        deadline,
+        requestSignal,
+        REQUEST_TIMEOUT_MS,
+      ),
     },
+    dependencies,
+    deadline,
   )
-  const policy = parseUploadPolicy(await safeJson(policyResponse))
+  const policy = parseUploadPolicy(
+    await safeJson(policyResponse, dependencies, deadline),
+  )
   if (!policy) {
     throw new SpeechGatewayError(
       502,
@@ -318,8 +383,15 @@ async function transcribe(
       method: 'POST',
       body: upload,
       redirect: 'error',
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: deadlineSignal(
+        dependencies,
+        deadline,
+        requestSignal,
+        REQUEST_TIMEOUT_MS,
+      ),
     },
+    dependencies,
+    deadline,
   )
 
   const submitResponse = await fetchUpstream(
@@ -338,10 +410,19 @@ async function transcribe(
         input: { file_urls: [`oss://${objectKey}`] },
         parameters: {},
       }),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: deadlineSignal(
+        dependencies,
+        deadline,
+        requestSignal,
+        REQUEST_TIMEOUT_MS,
+      ),
     },
+    dependencies,
+    deadline,
   )
-  const taskId = parseTaskId(await safeJson(submitResponse))
+  const taskId = parseTaskId(
+    await safeJson(submitResponse, dependencies, deadline),
+  )
   if (!taskId) {
     throw new SpeechGatewayError(
       502,
@@ -358,10 +439,19 @@ async function transcribe(
       {
         method: 'GET',
         headers: commonHeaders,
-        signal: AbortSignal.timeout(POLL_REQUEST_TIMEOUT_MS),
+        signal: deadlineSignal(
+          dependencies,
+          deadline,
+          requestSignal,
+          POLL_REQUEST_TIMEOUT_MS,
+        ),
       },
+      dependencies,
+      deadline,
     )
-    const task = parseTask(await safeJson(pollResponse))
+    const task = parseTask(
+      await safeJson(pollResponse, dependencies, deadline),
+    )
     if (!task) {
       throw new SpeechGatewayError(
         502,
@@ -388,7 +478,12 @@ async function transcribe(
       )
     }
     if (attempt < dependencies.maxPolls - 1) {
-      await dependencies.sleep(dependencies.pollIntervalMs)
+      await dependencies.sleep(
+        Math.min(
+          dependencies.pollIntervalMs,
+          remainingTime(dependencies, deadline),
+        ),
+      )
     }
   }
   if (!resultUrl) {
@@ -405,10 +500,19 @@ async function transcribe(
     {
       method: 'GET',
       redirect: 'error',
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: deadlineSignal(
+        dependencies,
+        deadline,
+        requestSignal,
+        REQUEST_TIMEOUT_MS,
+      ),
     },
+    dependencies,
+    deadline,
   )
-  const text = transcriptText(await safeJson(resultResponse))
+  const text = transcriptText(
+    await safeJson(resultResponse, dependencies, deadline),
+  )
   if (!text) {
     throw new SpeechGatewayError(
       502,
@@ -419,16 +523,9 @@ async function transcribe(
   return text
 }
 
-export async function handleDemoTranscribeRequest(
+export function preflightDemoTranscribeRequest(
   request: Request,
   environment: TranscribeEnvironment,
-  dependencies: TranscribeDependencies = {
-    fetcher: fetch,
-    sleep: (milliseconds) =>
-      new Promise((resolve) => setTimeout(resolve, milliseconds)),
-    maxPolls: DEFAULT_MAX_POLLS,
-    pollIntervalMs: DEFAULT_POLL_INTERVAL_MS,
-  },
 ) {
   const cors = demoCorsHeaders(request)
   if (!cors) {
@@ -463,6 +560,33 @@ export async function handleDemoTranscribeRequest(
       cors,
     )
   }
+  return null
+}
+
+export async function handleDemoTranscribeRequest(
+  request: Request,
+  environment: TranscribeEnvironment,
+  dependencies: TranscribeDependencies = {
+    fetcher: fetch,
+    sleep: (milliseconds) =>
+      new Promise((resolve) => setTimeout(resolve, milliseconds)),
+    maxPolls: DEFAULT_MAX_POLLS,
+    pollIntervalMs: DEFAULT_POLL_INTERVAL_MS,
+    now: Date.now,
+    totalTimeoutMs: DEFAULT_TOTAL_TIMEOUT_MS,
+  },
+) {
+  const preflight = preflightDemoTranscribeRequest(
+    request,
+    environment,
+  )
+  if (preflight) return preflight
+  const cors = demoCorsHeaders(request)!
+  const totalTimeoutMs = Math.min(
+    Math.max(1, dependencies.totalTimeoutMs),
+    MAX_TOTAL_TIMEOUT_MS,
+  )
+  const deadline = dependencies.now() + totalTimeoutMs
 
   const baseUrl =
     environment.HEADLESS_SPEECH_GATEWAY_BASE_URL?.trim() ?? ''
@@ -507,7 +631,11 @@ export async function handleDemoTranscribeRequest(
       cors,
     )
   }
-  const extension = ALLOWED_MIME_TYPES.get(audio.type.toLowerCase())
+  const mimeType = audio.type
+    .split(';', 1)[0]
+    .trim()
+    .toLowerCase()
+  const extension = ALLOWED_MIME_TYPES.get(mimeType)
   if (!extension) {
     return demoJsonError(
       415,
@@ -533,6 +661,8 @@ export async function handleDemoTranscribeRequest(
       apiKey,
       model,
       dependencies,
+      deadline,
+      request.signal,
     )
     return Response.json({ text }, { headers: cors })
   } catch (error) {
