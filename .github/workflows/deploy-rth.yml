@@ -16,7 +16,10 @@ jobs:
     container:
       image: shangzheny/rth-host-helper:latest
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
       - name: Deploy to Retinbox Web Hosting
-        uses: rthsoftware/host-auto-deploy@master
+        run: deno -Ar https://host.retiehe.com/cli deploy
         env:
           RTH_API_KEY: ${{ secrets.RTH_API_KEY }}
