@@ -43,3 +43,17 @@ test('allows only the shared Vercel BFF as an external connection', async () => 
   )
   assert.doesNotMatch(csp, /113\.45\.39\.247|api\.iotwq\.top/)
 })
+
+test('allows the exact Retinbox image CDN used by static asset redirects', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
+  const csp = html.match(
+    /<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]+)"/,
+  )?.[1]
+
+  assert.ok(csp)
+  assert.match(
+    csp,
+    /img-src 'self' https:\/\/cdn\.rthe\.cn blob: data:/,
+  )
+  assert.doesNotMatch(csp, /img-src[^;]*\*/)
+})
