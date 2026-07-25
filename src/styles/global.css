@@ -77,6 +77,17 @@ button {
   outline-offset: 3px;
 }
 
+.route-loading {
+  display: grid;
+  width: 100%;
+  height: 100dvh;
+  place-items: center;
+  color: var(--panel-3);
+  font-family: "Silkscreen", monospace;
+  font-size: 10px;
+  background: var(--navy-dk);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

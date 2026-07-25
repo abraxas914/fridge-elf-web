@@ -8,6 +8,20 @@
       "maxDuration": 300
     }
   },
+  "rewrites": [
+    {
+      "source": "/api/releases/latest",
+      "destination": "/api/release"
+    },
+    {
+      "source": "/api/download/android",
+      "destination": "/api/download"
+    },
+    {
+      "source": "/demo",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

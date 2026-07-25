@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 
-export async function prepareApp(page: Page, path = '/') {
+export async function prepareApp(page: Page, path = '/demo') {
   await page.addInitScript(() => {
     localStorage.removeItem('life-helper-v2-browser-inventory')
     const FixedDate = class extends Date {
@@ -18,6 +18,9 @@ export async function prepareApp(page: Page, path = '/') {
   await page.addStyleTag({
     content: '*,*::before,*::after{animation:none!important;transition:none!important}',
   })
+  if (path.startsWith('/demo')) {
+    await expect(page.getByTestId('kitchen-scene')).toBeVisible()
+  }
 }
 
 export async function enterApp(page: Page) {

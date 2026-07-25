@@ -6,7 +6,7 @@ const outDir =
   process.env.WEB_OUT_DIR ?? fileURLToPath(new URL('./dist', import.meta.url))
 
 export default defineConfig({
-  base: './',
+  base: '/',
   plugins: [react()],
   build: {
     outDir,

@@ -18,7 +18,7 @@ test('signed demo session generates an illustration without exposing a key', asy
     })
   })
 
-  await prepareApp(page, '/?demo=e2e-signed-token')
+  await prepareApp(page, '/demo?demo=e2e-signed-token')
   await expect(page).not.toHaveURL(/demo=/)
   await enterApp(page)
   await selectTab(page, '食谱')
