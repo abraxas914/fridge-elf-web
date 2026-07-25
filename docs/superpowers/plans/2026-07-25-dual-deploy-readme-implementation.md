@@ -347,7 +347,7 @@ npx --yes vercel@latest git connect https://github.com/abraxas914/fridge-elf-web
 
 Expected: Vercel confirms the repository connection without creating a new project or secret.
 
-- [ ] **Step 4: Push `main` and observe both publishers**
+- [x] **Step 4: Push `main` and observe both publishers**
 
 ```bash
 git push origin main
@@ -357,7 +357,7 @@ npx --yes vercel@latest ls fridge-elf
 
 Expected: `CI` and `Deploy Retinbox mirror` run for the pushed SHA, and Vercel creates a production deployment from the same SHA.
 
-- [ ] **Step 5: Verify production behavior**
+- [x] **Step 5: Verify production behavior**
 
 Check:
 
@@ -401,4 +401,11 @@ External deployment progress:
 - `Deploy Retinbox mirror` run `30159209811` completed successfully.
 - Re-linked the working directory to the existing `suyc417-5032s-projects/fridge-elf` project; no duplicate project was created.
 - Connected `https://github.com/abraxas914/fridge-elf-web` through Vercel Git Integration.
-- A subsequent `main` push is required to validate that all three publishers trigger from the same new SHA.
+- Pushed `b827ed0f1f03fa43c4c8e077b9cad4934752a425` after enabling Vercel Git Integration.
+- `CI` run `30159430915` completed successfully, including the new Retinbox workflow regression test.
+- Vercel deployment `dpl_9RKkgFueCKjRs72g7A2Pzs8t4VML` reached `Ready` and assigned the `https://fridge-elf-app.vercel.app` production alias.
+- The first Retinbox run exposed an upstream false-positive: `rthsoftware/host-auto-deploy@master` omitted the `deploy` subcommand and only printed CLI help.
+- Commit `b827ed0` replaced the defective composite action with the explicit `deno -Ar https://host.retiehe.com/cli deploy` command and added two regression tests.
+- `Deploy Retinbox mirror` run `30159430904` then performed the real `build:rth`, verified the API key, uploaded `index.html`, `demo/index.html`, `404.html`, and assets, and finished with `All files uploaded` and `Done`.
+- Vercel `/` and `/demo` returned HTTP 200.
+- Retinbox rejects command-line probes with its known HTTP 403 anti-bot response, while a normal browser session successfully rendered the current Hero at `/` and the “冰箱生活助手” onboarding at `/demo/`.

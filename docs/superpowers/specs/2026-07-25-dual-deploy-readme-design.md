@@ -62,6 +62,16 @@ Retinbox 继续使用：
 RTH_API_KEY
 ```
 
+实施时发现 `rthsoftware/host-auto-deploy@master` 的 composite action
+遗漏了 `deploy` 子命令，会打印 CLI 帮助后以成功状态退出。最终工作流因此
+不再委托该 action，而是在 Retinbox helper 容器中显式执行：
+
+```bash
+deno -Ar https://host.retiehe.com/cli deploy
+```
+
+站点、构建命令和输出目录仍由 `rth-host.json` 提供。
+
 ### 2.2 选择理由
 
 - 不新增长期有效的 `VERCEL_TOKEN`。
