@@ -14,7 +14,10 @@ test('complete five-tab prototype journey remains browser-only and usable', asyn
   page.on('pageerror', (error) => pageErrors.push(error))
   page.on('request', (request) => {
     const url = new URL(request.url())
-    if (!['127.0.0.1', 'localhost'].includes(url.hostname)) {
+    if (
+      ['http:', 'https:'].includes(url.protocol) &&
+      !['127.0.0.1', 'localhost'].includes(url.hostname)
+    ) {
       externalRequests.push(request.url())
     }
   })
@@ -27,42 +30,49 @@ test('complete five-tab prototype journey remains browser-only and usable', asyn
   await page.getByRole('button', { name: '关闭' }).click()
 
   await selectTab(page, '购物')
-  await page.getByRole('button', { name: /牛奶.*2L/ }).click()
-  await expect(page.getByRole('button', { name: /牛奶.*2L/ })).toHaveAttribute(
+  await page.getByRole('button', { name: '完成 牛奶' }).click()
+  await expect(page.getByRole('button', { name: '恢复 牛奶' })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
 
   await selectTab(page, '食谱')
-  await page.getByRole('button', { name: /番茄鸡蛋轻食碗/ }).click()
+  await page.getByRole('button', { name: /个人收藏食谱/ }).click()
+  await page.getByRole('button', { name: '查看完整食谱' }).click()
   await expect(page.getByRole('dialog')).toContainText('用时')
   await page.getByRole('button', { name: '关闭' }).click()
   await page.getByRole('button', { name: /周规划/ }).click()
   await page.getByRole('button', { name: /周一/ }).click()
+  await page.getByRole('button', { name: /午餐/ }).click()
   await page.getByRole('button', { name: /三文鱼谷物碗/ }).last().click()
-  await page.getByRole('button', { name: /周一/ }).click()
+  await page.getByRole('button', { name: '加入这餐' }).click()
+  await page.getByRole('button', { name: /晚餐/ }).click()
   await page.getByRole('button', { name: /香蕉燕麦松饼/ }).last().click()
+  await page.getByRole('button', { name: '加入这餐' }).click()
   await page.getByRole('button', { name: '关闭' }).click()
   await selectTab(page, '购物')
   await expect(page.getByText('• 燕麦')).toBeVisible()
 
   await selectTab(page, '显示屏')
-  await page.getByTestId('device-screen').click()
-  await expect(page.getByTestId('device-screen')).toHaveClass(/awake/)
+  await page.getByRole('button', { name: '便签' }).click()
   await page.getByRole('button', { name: /早点回家/ }).click()
-  await page.getByRole('button', { name: '发送 ▶' }).click()
-  await expect(page.getByTestId('display-note')).toContainText('早点回家')
-  await page.getByRole('button', { name: /三餐/ }).click()
-  await expect(page.getByTestId('display-widget-meals')).toBeVisible()
+  await page.getByRole('button', { name: '发送' }).click()
+  await expect(
+    page.locator('.display-screen').getByText('早点回家'),
+  ).toBeVisible()
+  await page.getByRole('button', { name: '三餐' }).click()
+  await expect(
+    page.locator('.display-screen').getByText('MEALS · 今日三餐'),
+  ).toBeVisible()
 
   await selectTab(page, '我的')
   await page.getByRole('button', { name: /家庭/ }).click()
-  await expect(page.getByTestId('family-panel')).toBeVisible()
+  await expect(page.getByText('家庭成员')).toBeVisible()
   await page.getByRole('button', { name: /合租/ }).click()
-  await expect(page.getByTestId('roomie-panel')).toBeVisible()
+  await expect(page.getByText('合租成员')).toBeVisible()
   await selectTab(page, '冰箱')
 
-  await expect(page.getByText('BROWSER MOCK')).toBeVisible()
+  await expect(page.locator('.runtime-label')).toHaveText('BROWSER MOCK')
   await expectNoOverflow(page)
   expect(pageErrors).toEqual([])
   expect(externalRequests).toEqual([])

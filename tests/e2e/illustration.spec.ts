@@ -33,12 +33,14 @@ test('anonymous demo session generates an illustration without exposing a key', 
   await prepareApp(page, '/demo')
   await enterApp(page)
   await selectTab(page, '食谱')
-  await page.getByRole('button', { name: /菜谱插画/ }).click()
+  await page.getByRole('button', { name: /AI 食谱插画/ }).click()
   await expect(page.getByRole('dialog')).toContainText('选择插画风格')
-  await page.getByRole('button', { name: /水彩厨房/ }).click()
-  await page.getByRole('button', { name: /生成插画/ }).click()
+  await page.getByRole('radio', { name: '水彩厨房' }).check()
+  await page.getByRole('button', { name: '生成食谱插画' }).click()
 
-  await expect(page.getByRole('img', { name: /番茄炒蛋.*第 1 页/ })).toBeVisible()
+  await expect(
+    page.getByRole('img', { name: /番茄鸡蛋轻食碗.*水彩厨房/ }),
+  ).toBeVisible()
   expect(requests).toHaveLength(1)
   expect(requests[0]).toMatchObject({
     contractVersion: 1,

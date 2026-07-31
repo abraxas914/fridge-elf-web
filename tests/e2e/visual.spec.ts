@@ -18,12 +18,13 @@ test('the 16 named visual states stay locked', async ({ page }) => {
 
   await selectTab(page, '购物')
   await shot(page, 'shop-default')
-  await page.getByRole('button', { name: /牛奶.*2L/ }).click()
+  await page.getByRole('button', { name: '完成 牛奶' }).click()
   await shot(page, 'shop-checked')
 
   await selectTab(page, '食谱')
   await shot(page, 'recipe-default')
-  await page.getByRole('button', { name: /番茄鸡蛋轻食碗/ }).click()
+  await page.getByRole('button', { name: /个人收藏食谱/ }).click()
+  await page.getByRole('button', { name: '查看完整食谱' }).click()
   await expect(page.getByText('用时')).toBeVisible()
   await shot(page, 'recipe-detail')
   await page.getByRole('button', { name: '关闭' }).click()
@@ -32,17 +33,19 @@ test('the 16 named visual states stay locked', async ({ page }) => {
   await page.getByRole('button', { name: '关闭' }).click()
 
   await selectTab(page, '显示屏')
-  await shot(page, 'note-sleep')
-  await page.getByTestId('device-screen').click()
-  await shot(page, 'note-awake')
-  await page.getByRole('button', { name: /语音互动/ }).click()
-  await shot(page, 'note-voice')
-  await page.getByRole('button', { name: /三餐/ }).click()
-  await shot(page, 'note-widget')
+  await shot(page, 'display-home')
+  await page.getByRole('button', { name: '便签' }).click()
+  await shot(page, 'display-note')
   await page.getByRole('button', { name: /早点回家/ }).click()
-  await page.getByRole('button', { name: '发送 ▶' }).click()
-  await expect(page.getByTestId('display-note')).toContainText('早点回家')
-  await shot(page, 'note-message')
+  await page.getByRole('button', { name: '发送' }).click()
+  await expect(
+    page.locator('.display-screen').getByText('早点回家'),
+  ).toBeVisible()
+  await shot(page, 'display-message')
+  await page.getByRole('button', { name: '三餐' }).click()
+  await shot(page, 'display-meals')
+  await page.getByRole('button', { name: '日历' }).click()
+  await shot(page, 'display-calendar')
 
   await selectTab(page, '我的')
   await expect(page.getByRole('status')).not.toHaveClass(/show/, {
