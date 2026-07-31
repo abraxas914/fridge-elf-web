@@ -102,4 +102,23 @@ describe('Demo world snapshot', () => {
       health: '',
     })
   })
+
+  it('normalizes recipes without nutrition data for the Agent contract', () => {
+    const snapshot = buildDemoWorldSnapshot({
+      inventory: [],
+      planner: emptyPlanner(),
+      missingItems: [],
+    })
+
+    expect(
+      snapshot.availableRecipes.find(
+        (recipe) => recipe.id === 'recipe-tomato-egg-noodles',
+      ),
+    ).toMatchObject({
+      kcal: 0,
+      steps: expect.arrayContaining([
+        expect.stringContaining('番茄汤底'),
+      ]),
+    })
+  })
 })
