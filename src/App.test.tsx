@@ -79,10 +79,11 @@ describe('App', () => {
     fireEvent.click(
       screen.getAllByRole('button', { name: /三文鱼谷物碗/ }).at(-1)!,
     )
+    fireEvent.click(screen.getByRole('button', { name: '加入这餐' }))
     fireEvent.click(screen.getByRole('button', { name: '关闭' }))
     fireEvent.click(screen.getByRole('tab', { name: '购物' }))
 
-    expect(screen.getByText('• 米/藜麦')).toBeVisible()
+    expect(screen.getByText('• 谷物饭')).toBeVisible()
   })
 
   it('opens the AI recipe illustration studio from the fourth tool', () => {

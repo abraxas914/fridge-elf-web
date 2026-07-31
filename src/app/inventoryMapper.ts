@@ -1,4 +1,5 @@
 import {
+  FOOD_SVGS,
   findFoodCatalogEntry,
   type FoodKey,
 } from '../catalog/foodCatalog'
@@ -136,5 +137,5 @@ export function mapNativeInventory(
 }
 
 export function isKnownFoodKey(key: string): key is FoodKey {
-  return key in foodCatalog
+  return key in FOOD_SVGS
 }
